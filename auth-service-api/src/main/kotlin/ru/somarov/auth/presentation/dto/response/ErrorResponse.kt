@@ -1,4 +1,4 @@
-package ru.somarov.mail.presentation.dto.response
+package ru.somarov.auth.presentation.dto.response
 
 import io.swagger.v3.oas.annotations.media.Schema
 import kotlinx.serialization.Serializable

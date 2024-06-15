@@ -1,4 +1,4 @@
-package ru.somarov.mail.serialization
+package ru.somarov.auth.serialization
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind

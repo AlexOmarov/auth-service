@@ -1,9 +1,6 @@
 plugins {
     kotlin("jvm")
     application
-    alias(libs.plugins.spring.boot)
-    alias(libs.plugins.spring.dependency.management)
-    alias(libs.plugins.kotlin.spring)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.sonarqube)
     alias(libs.plugins.detekt)
@@ -20,16 +17,8 @@ dependencies {
     detektPlugins(libs.detekt.ktlint)
 
     implementation(libs.bundles.kotlin)
-    implementation(libs.bundles.web)
     implementation(libs.bundles.kafka)
     implementation(libs.bundles.database)
-
-    implementation(libs.spring.boot.starter.mail)
-    implementation(libs.spring.boot.starter.rsocket)
-    implementation(libs.spring.boot.starter.cache)
-    implementation(libs.spring.boot.starter.aop)
-    implementation(libs.spring.boot.starter.security)
-    implementation(libs.spring.security.rsocket)
 
     implementation(libs.bundles.postgres)
     implementation(libs.bundles.redis)
@@ -49,10 +38,6 @@ repositories {
     mavenCentral()
 }
 
-tasks.bootJar {
-    archiveFileName.set("app.jar")
-}
-
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging {
@@ -66,10 +51,6 @@ tasks.withType<Test> {
         showCauses = true
         showStackTraces = true
     }
-}
-
-springBoot {
-    buildInfo()
 }
 
 kover {

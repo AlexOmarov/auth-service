@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin) // Sonarqube may break if this plugin will be in subprojects with version
-    alias(libs.plugins.spring.dependency.management) apply false
     alias(libs.plugins.sonarqube)
 }
 
