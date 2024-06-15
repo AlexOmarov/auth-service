@@ -17,6 +17,7 @@ dependencies {
     detektPlugins(libs.detekt.ktlint)
 
     implementation(libs.bundles.kotlin)
+    implementation(libs.bundles.web)
     implementation(libs.bundles.kafka)
     implementation(libs.bundles.database)
 

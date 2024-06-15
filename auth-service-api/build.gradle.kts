@@ -16,7 +16,6 @@ dependencies {
     api(libs.swagger.annotations)
 }
 
-
 publishing {
     publications {
         create<MavenPublication>(rootProject.name) {
