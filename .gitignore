@@ -45,3 +45,6 @@ bin/
 /docs/.swagger-codegen-ignore
 /docs/index.html
 /docs/.swagger-codegen/VERSION
+/auth-service-app/docs/.swagger-codegen-ignore
+/auth-service-app/docs/index.html
+/auth-service-app/docs/.swagger-codegen/VERSION
