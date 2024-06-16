@@ -12,7 +12,7 @@ detekt {
 dependencies {
     detektPlugins(libs.detekt.ktlint)
 
-    api(libs.kotlin.serialization.cbor)
+    api(libs.kotlin.serialization.core)
     api(libs.swagger.annotations)
 }
 

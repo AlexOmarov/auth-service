@@ -7,6 +7,7 @@ kotlin-serialization = "1.6.3"
 kover = "0.8.1"
 ktor = "2.3.11"
 kompendium = "3.14.4"
+jackson = "2.17.1"
 
 logstash-logback-encoder = "7.4"
 otel-logback-encoder = "2.4.0-alpha"
@@ -24,6 +25,7 @@ flyway="10.15.0"
 junit="5.10.2"
 junit-launcher="1.10.2"
 postgresql="42.7.3"
+rsocket="0.16.0"
 rsocket-micrometer = "1.1.4"
 shedlock = "5.13.0"
 sonarqube = "5.0.0.4638"
@@ -43,6 +45,8 @@ detekt-ktlint = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatti
 
 flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref="flyway" }
 flyway-postgres = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref="flyway" }
+postgresql = { group = "org.postgresql", name = "postgresql", version.ref="postgresql" }
+r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
 
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref="junit" }
 junit-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref="junit" }
@@ -68,8 +72,15 @@ ktor-server-content-negotiation = { group = "io.ktor", name = "ktor-server-conte
 ktor-server-serialization-kotlinx-cbor = { group = "io.ktor", name = "ktor-serialization-kotlinx-cbor", version.ref = "ktor" }
 ktor-server-config-yaml = { group = "io.ktor", name = "ktor-server-config-yaml", version.ref = "ktor" }
 
-kotlin-serialization-cbor = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-cbor", version.ref = "kotlin-serialization" }
+rsocket-core = { group = "io.rsocket.kotlin", name = "rsocket-core", version.ref = "rsocket" }
+rsocket-ktor-client = { group = "io.rsocket.kotlin", name = "rsocket-ktor-client", version.ref = "rsocket" }
+rsocket-ktor-server = { group = "io.rsocket.kotlin", name = "rsocket-ktor-server", version.ref = "rsocket" }
+
 kotlin-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlin-serialization" }
+kotlin-serialization-cbor = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-cbor", version.ref = "kotlin-serialization" }
+kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlin-serialization" }
+kotlin-jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
+kotlin-jackson-cbor = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-cbor", version.ref = "jackson" }
 
 kompendium = { group = "io.bkbn", name = "kompendium-core", version.ref = "kompendium" }
 
@@ -77,9 +88,6 @@ otel-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.r
 
 mockito = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito" }
 
-postgresql = { group = "org.postgresql", name = "postgresql", version.ref="postgresql" }
-
-r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
 shedlock-core = { group = "net.javacrumbs.shedlock", name = "shedlock-core", version.ref = "shedlock" }
 shedlock-provider-r2dbc = { group = "net.javacrumbs.shedlock", name = "shedlock-provider-r2dbc", version.ref = "shedlock" }
 
@@ -98,7 +106,6 @@ rsocket-micrometer = { module = "io.rsocket:rsocket-micrometer", version.ref = "
 kafka = ["kafka",  "testcontainers-kafka"]
 database = [ "flyway-core"]
 test = ["junit-api", "junit-engine", "testcontainers-junit", "mockito", "awaitility", "reactor-test"]
-
 postgres = ["flyway-postgres", "postgresql", "testcontainers-postgres", "r2dbc-postgresql"]
 redis = ["testcontainers-redis"]
 web = [
@@ -110,17 +117,17 @@ web = [
     "ktor-server-content-negotiation",
     "ktor-server-serialization-kotlinx-cbor",
     "ktor-server-config-yaml",
-    "kompendium",
+    "kompendium"
 ]
 micrometer = ["micrometer", "micrometer-registry-otlp", "micrometer-reactor", "micrometer-tracing", "micrometer-tracing-otel", "micrometer-context-propagation"]
 shedlock = ["shedlock-core", "shedlock-provider-r2dbc"]
+rsocket = ["rsocket-core", "rsocket-micrometer", "rsocket-ktor-client", "rsocket-ktor-server"]
 
 [plugins]
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
-kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }

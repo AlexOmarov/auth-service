@@ -5,8 +5,9 @@ import io.ktor.util.logging.KtorSimpleLogger
 
 internal class Service(private val env: ApplicationEnvironment) {
     private val logger = KtorSimpleLogger("ru.somarov.auth.application.Service")
-    fun makeWork() {
+    fun makeWork(): String {
         val name = env.config.property("application.name").getString()
         logger.info("hi sfdgs $name")
+        return name
     }
 }

@@ -25,6 +25,12 @@ dependencies {
     implementation(libs.bundles.redis)
     implementation(libs.bundles.micrometer)
     implementation(libs.bundles.shedlock)
+    implementation(libs.bundles.rsocket)
+    implementation(libs.kotlin.serialization.core)
+    implementation(libs.kotlin.serialization.cbor)
+    implementation(libs.kotlin.serialization.json)
+    implementation(libs.kotlin.jackson)
+    implementation(libs.kotlin.jackson.cbor)
 
     implementation(libs.rsocket.micrometer)
     implementation(libs.logback)
