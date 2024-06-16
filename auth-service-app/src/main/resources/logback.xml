@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE configuration>
 
-<configuration debug="false">
-    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-
-    <springProperty name="serviceName" source="spring.application.name"/>
-    <springProperty name="OTEL_HOST" source="contour.otlp.host"/>
-
+<configuration scan="true" scanPeriod="10 seconds" debug="false">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
@@ -25,7 +20,7 @@
                             "spanId": "%X{spanId}",
                             "loggerName": "%logger",
                             "threadName": "%thread",
-                            "serviceName": "${serviceName}"
+                            "serviceName": "${APP_NAME:-undefined}"
                         }
                     </pattern>
                 </pattern>
@@ -39,7 +34,7 @@
     </appender>
     <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender"/>
 
-    <root>
+    <root level="${LOG_LEVEL:-info}">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="OTEL"/>
     </root>

@@ -16,7 +16,6 @@ dependencies {
 
     detektPlugins(libs.detekt.ktlint)
 
-    implementation(libs.bundles.kotlin)
     implementation(libs.bundles.web)
     implementation(libs.bundles.kafka)
     implementation(libs.bundles.database)
@@ -27,6 +26,7 @@ dependencies {
     implementation(libs.bundles.shedlock)
 
     implementation(libs.rsocket.micrometer)
+    implementation(libs.logback)
     implementation(libs.logback.logstash)
     implementation(libs.logback.otel)
     implementation(libs.otel.otlp)
@@ -35,8 +35,13 @@ dependencies {
     testRuntimeOnly(libs.junit.launcher)
 
 }
+
 repositories {
     mavenCentral()
+}
+
+application {
+    mainClass.set("io.ktor.server.netty.EngineMain")
 }
 
 tasks.withType<Test> {
@@ -57,12 +62,12 @@ tasks.withType<Test> {
 kover {
     useJacoco()
     reports {
-        total {
-            verify {
-                rule {
-                    minBound(0)
-                }
+        verify {
+            rule {
+                minBound(0)
             }
+        }
+        total {
             filters {
                 excludes {
                     classes(

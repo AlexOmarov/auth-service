@@ -42,3 +42,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store!/.idea/kotlinc.xml
+/docs/.swagger-codegen-ignore
+/docs/index.html
+/docs/.swagger-codegen/VERSION
