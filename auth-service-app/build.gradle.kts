@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     application
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktor)
     alias(libs.plugins.sonarqube)
     alias(libs.plugins.detekt)
     alias(libs.plugins.kover)
@@ -42,6 +43,12 @@ repositories {
 
 application {
     mainClass.set("io.ktor.server.netty.EngineMain")
+}
+
+ktor {
+    fatJar {
+        archiveFileName.set("app.jar")
+    }
 }
 
 tasks.withType<Test> {
