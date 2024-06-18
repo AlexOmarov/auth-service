@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
 
-class ServerInterceptor : Interceptor<RSocket> {
+class ServerLoggingInterceptor : Interceptor<RSocket> {
 
     private val logger = KtorSimpleLogger(this.javaClass.name)
     private val encoding: Charset = Charset.forName("UTF8")

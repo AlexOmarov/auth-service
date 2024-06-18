@@ -10,3 +10,6 @@ ktor:
 
 application:
   name: "$APP_NAME:undefined"
+  instance: "$APP_INSTANCE:undefined" # TODO: add kuber var
+  otlp:
+    url: "$OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317"

@@ -33,6 +33,7 @@ dependencies {
     implementation(libs.kotlin.jackson.cbor)
 
     implementation(libs.rsocket.micrometer)
+    implementation(libs.kotlin.coroutines.reactor)
     implementation(libs.logback)
     implementation(libs.logback.logstash)
     implementation(libs.logback.otel)
