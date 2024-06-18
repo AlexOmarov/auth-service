@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kotlin.jackson)
     implementation(libs.kotlin.jackson.cbor)
+    implementation(libs.kotlin.datetime)
 
     implementation(libs.rsocket.micrometer)
     implementation(libs.kotlin.coroutines.reactor)
@@ -57,6 +58,26 @@ ktor {
         archiveFileName.set("app.jar")
     }
 }
+
+tasks.register("generateBuildInfo") {
+    group = "build"
+    description = "Generates build-info.properties file with build metadata."
+
+    doLast {
+        val buildInfoFile = file("${layout.buildDirectory.asFile.get().path}/resources/main/META-INF/build-info.properties")
+        buildInfoFile.parentFile.mkdirs()
+        buildInfoFile.writeText("""
+            build.version=${project.version}
+            build.group=${project.group}
+            build.artifact=${project.name}
+        """.trimIndent())
+    }
+}
+
+tasks.named("jar") {
+    dependsOn("generateBuildInfo")
+}
+
 
 tasks.withType<Test> {
     useJUnitPlatform()

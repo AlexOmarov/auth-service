@@ -18,6 +18,7 @@ import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
 import io.ktor.util.logging.KtorSimpleLogger
 import io.micrometer.core.instrument.Clock
+import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
@@ -43,6 +44,8 @@ import ru.somarov.auth.application.Service
 import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
 import ru.somarov.auth.presentation.auth
 import ru.somarov.auth.presentation.authSocket
+import java.util.Properties
+import java.util.TimeZone
 
 @Suppress("unused") // Referenced in application.yaml
 @OptIn(ExperimentalSerializationApi::class)
@@ -62,12 +65,20 @@ internal fun Application.config() {
             )
     }
 
+
     val meterRegistry = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM).also {
         it.config().commonTags(
             "application", env.get("application.name"),
             "instance", env.get("application.instance")
         )
     }
+    val buildProps = getBuildProperties()
+
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+    Gauge.builder("project_version") { 1 }
+        .description("Version of project in tag")
+        .tag("version", buildProps.getProperty("version", "undefined"))
+        .register(meterRegistry)
 
     install(MicrometerMetrics) {
         registry = meterRegistry
@@ -127,6 +138,14 @@ internal fun Application.config() {
         auth(service)
         authSocket(Service(env))
     }
+}
+
+private fun getBuildProperties(): Properties {
+    val properties = Properties()
+    Application::class.java.getResourceAsStream("/META-INF/build-info.properties")?.use {
+        properties.load(it)
+    }
+    return properties
 }
 
 private fun ApplicationEnvironment.get(path: String): String {

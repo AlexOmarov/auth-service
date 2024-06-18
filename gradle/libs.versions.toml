@@ -9,6 +9,7 @@ ktor = "2.3.11"
 kompendium = "3.14.4"
 jackson = "2.17.1"
 kotlin-reactor="1.8.1"
+kotlin-datetime="0.6.0"
 
 logstash-logback-encoder = "7.4"
 otel-logback-encoder = "2.4.0-alpha"
@@ -85,6 +86,7 @@ kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-s
 kotlin-jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
 kotlin-jackson-cbor = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-cbor", version.ref = "jackson" }
 kotlin-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor", version.ref = "kotlin-reactor" }
+kotlin-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlin-datetime" }
 
 
 
