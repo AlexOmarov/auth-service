@@ -1,12 +1,22 @@
 package ru.somarov.auth.infrastructure.rsocket
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import io.ktor.util.logging.KtorSimpleLogger
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.core.readBytes
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.observation.ObservationRegistry
+import io.netty.buffer.ByteBufUtil.isText
+import io.netty.buffer.Unpooled
 import io.rsocket.kotlin.RSocket
 import io.rsocket.kotlin.core.Interceptor
 import io.rsocket.kotlin.payload.Payload
+import io.rsocket.metadata.CompositeMetadata
+import io.rsocket.metadata.WellKnownMimeType
 import io.rsocket.micrometer.MicrometerRSocketInterceptor
+import io.rsocket.micrometer.observation.ObservationResponderRSocketProxy
 import io.rsocket.util.DefaultPayload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -15,15 +25,29 @@ import kotlinx.coroutines.reactor.asFlux
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.flux
 import kotlinx.coroutines.reactor.mono
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
 
-class ServerMetricsInterceptor(private val registry: MeterRegistry) : Interceptor<RSocket> {
+internal class ServerObservabilityInterceptor(
+    private val meterRegistry: MeterRegistry,
+    private val observationRegistry: ObservationRegistry
+) : Interceptor<RSocket> {
+
+    private val logger = KtorSimpleLogger(this.javaClass.name)
+    private val encoding: Charset = Charset.forName("UTF8")
+    private var cborMapper = ObjectMapper(CBORFactory()).registerKotlinModule()
+
 
     override fun intercept(input: RSocket): RSocket {
-        val interceptor = MicrometerRSocketInterceptor(registry)
-        val proxy: io.rsocket.RSocket = interceptor.apply(getRsocketWrapper(input)) as io.rsocket.RSocket
+        val wrapper = getRSocketWrapper(input)
+        val measuredRSocket = MicrometerRSocketInterceptor(meterRegistry).apply(wrapper) as io.rsocket.RSocket
+        val proxy = ObservationResponderRSocketProxy(measuredRSocket, observationRegistry)
+
         return object : RSocket {
             override val coroutineContext: CoroutineContext
                 get() = input.coroutineContext
@@ -33,16 +57,33 @@ class ServerMetricsInterceptor(private val registry: MeterRegistry) : Intercepto
             }
 
             override suspend fun requestResponse(payload: Payload): Payload {
+
+                val deserializedRequest = getDeserializedPayload(payload)
+                logger.info(
+                    "Incoming rsocket request -> ${deserializedRequest.third}: " +
+                        "payload: ${deserializedRequest.first}, metadata: ${deserializedRequest.second}"
+                )
+
                 val result = proxy.requestResponse(
                     DefaultPayload.create(
                         payload.data.readBytes(),
                         payload.metadata?.readBytes()
                     )
                 ).awaitSingle()
-                return Payload(
+
+                val response = Payload(
                     ByteReadChannel(result.data).readRemaining(),
                     ByteReadChannel(result.metadata).readRemaining()
                 )
+
+                val deserializedResponse = getDeserializedPayload(response)
+                logger.info(
+                    "Outgoing rsocket response <- ${deserializedRequest.third}: " +
+                        "payload: ${deserializedResponse.first}, " +
+                        "request metadata: ${deserializedRequest.second}, " +
+                        "response metadata: ${deserializedResponse.second}"
+                )
+                return response
             }
 
             override fun requestStream(payload: Payload): Flow<Payload> {
@@ -61,7 +102,7 @@ class ServerMetricsInterceptor(private val registry: MeterRegistry) : Intercepto
         }
     }
 
-    private fun getRsocketWrapper(input: RSocket): io.rsocket.RSocket {
+    private fun getRSocketWrapper(input: RSocket): io.rsocket.RSocket {
         return object : io.rsocket.RSocket {
             @Suppress("kotlin:S6508") // Reactor java Void type
             override fun fireAndForget(payload: io.rsocket.Payload): Mono<Void> {
@@ -100,5 +141,35 @@ class ServerMetricsInterceptor(private val registry: MeterRegistry) : Intercepto
                 }
             }
         }
+    }
+
+    private fun getDeserializedPayload(payload: Payload): Triple<Any, List<String>, String> {
+        val data = try {
+            val array = payload.data.copy().readBytes()
+            if (array.isNotEmpty()) {
+                val map = cborMapper.readValue(array, Any::class.java)
+                Json.Default.encodeToString(map)
+            } else {
+                "Body is null"
+            }
+        } catch (e: SerializationException) {
+            logger.error("Got error while deserializing cbor to string", e)
+            "Body is null"
+        }
+        var routing = "null"
+        val metadata = payload.metadata?.copy()?.let {
+            CompositeMetadata(Unpooled.wrappedBuffer(it.readBytes()), false)
+                .map { met ->
+                    val content = if (isText(met.content, encoding)) met.content.toString(encoding) else "Not text"
+                    if (met.mimeType == WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string) {
+                        routing = if (content.isNotEmpty()) content.substring(1) else content
+                        "Header(mime: ${met.mimeType}, content: $routing)"
+                    } else {
+                        "Header(mime: ${met.mimeType}, content: $content)"
+                    }
+                }
+        } ?: listOf()
+
+        return Triple(data, metadata, routing)
     }
 }
