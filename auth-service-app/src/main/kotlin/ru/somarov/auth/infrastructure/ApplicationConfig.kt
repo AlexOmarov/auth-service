@@ -3,16 +3,20 @@ package ru.somarov.auth.infrastructure
 import io.ktor.serialization.kotlinx.cbor.cbor
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
-import io.ktor.server.plugins.callid.CallId
-import io.ktor.server.plugins.callloging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.openapi.openAPI
+import io.ktor.server.plugins.origin
 import io.ktor.server.plugins.swagger.swaggerUI
+import io.ktor.server.request.path
+import io.ktor.server.request.receiveText
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
+import io.ktor.util.logging.KtorSimpleLogger
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
@@ -36,15 +40,14 @@ import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandl
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import ru.somarov.auth.application.Service
-import ru.somarov.auth.infrastructure.rsocket.ServerLoggingInterceptor
-import ru.somarov.auth.infrastructure.rsocket.ServerMetricsInterceptor
-import ru.somarov.auth.infrastructure.rsocket.ServerTracingInterceptor
+import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
 import ru.somarov.auth.presentation.auth
 import ru.somarov.auth.presentation.authSocket
 
 @Suppress("unused") // Referenced in application.yaml
 @OptIn(ExperimentalSerializationApi::class)
 internal fun Application.config() {
+    val logger = KtorSimpleLogger(this.javaClass.name)
     val env = environment
     val oteltracer = GlobalOpenTelemetry.getTracer("global")
     val tracer = OtelTracer(oteltracer, OtelCurrentTraceContext()) { }
@@ -66,7 +69,6 @@ internal fun Application.config() {
         )
     }
 
-
     install(MicrometerMetrics) {
         registry = meterRegistry
         meterBinders = listOf(
@@ -76,34 +78,49 @@ internal fun Application.config() {
         )
     }
 
-    install(CallId) {
-        retrieve { call ->
-            val dd = Observation.createNotStarted(
-                "http_call.request.path()",
-                { ReceiverContext<ApplicationCall> { carrier, key -> "" } },
-                observationRegistry)
-            ""
-        }
-    }
-    install(CallLogging)
-
     install(ContentNegotiation) { cbor(Cbor { ignoreUnknownKeys = true }) }
 
     install(WebSockets)
     install(RSocketSupport) {
         server {
             interceptors {
-                forResponder(ServerLoggingInterceptor())
-                forResponder(ServerTracingInterceptor(observationRegistry))
-                forResponder(ServerMetricsInterceptor(meterRegistry))
+                forResponder(ServerObservabilityInterceptor(meterRegistry, observationRegistry))
             }
+        }
+    }
+
+    intercept(ApplicationCallPipeline.Monitoring) {
+        val observation = Observation.start(
+            "http_${call.request.path()}",
+            { ReceiverContext<ApplicationCall> { carrier, key -> carrier.request.headers[key] }.also { it.carrier = call } },
+            observationRegistry
+        )
+        try {
+            observation.openScope().use {
+                logger.info(
+                    ">>> HTTP ${call.request.origin.method.value} ${call.request.path()} - " +
+                    "headers: ${call.request.headers.entries().map { "${it.key}: ${it.value}" }}, " +
+                    "body: ${call.receiveText()}"
+                )
+                proceed()
+                logger.info(
+                    "<<< HTTP ${call.request.origin.method.value} ${call.request.path()} - " +
+                        "headers: ${call.response.headers.allValues().entries().map { "${it.key}: ${it.value}" }}, "
+                )
+            }
+
+        } catch (error: Throwable) {
+            logger.error("Got exception while trying to observe http request: ${error.message}", error)
+            throw error
+        } finally {
+            observation.stop()
+            logger.info("Closed observation $observation")
         }
     }
 
     val service = Service(env)
 
     routing {
-
         openAPI("openapi")
         swaggerUI("swagger")
 
