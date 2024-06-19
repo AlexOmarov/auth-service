@@ -75,6 +75,8 @@ ktor-server-serialization-kotlinx-cbor = { group = "io.ktor", name = "ktor-seria
 ktor-server-config-yaml = { group = "io.ktor", name = "ktor-server-config-yaml", version.ref = "ktor" }
 ktor-server-metrics-micrometer = { group = "io.ktor", name = "ktor-server-metrics-micrometer", version.ref = "ktor" }
 ktor-server-call-id = { group = "io.ktor", name = "ktor-server-call-id", version.ref = "ktor" }
+ktor-server-request-validation = { group = "io.ktor", name = "ktor-server-request-validation", version.ref = "ktor" }
+ktor-server-status-pages = { group = "io.ktor", name = "ktor-server-status-pages", version.ref = "ktor" }
 
 rsocket-core = { group = "io.rsocket.kotlin", name = "rsocket-core", version.ref = "rsocket" }
 rsocket-ktor-client = { group = "io.rsocket.kotlin", name = "rsocket-ktor-client", version.ref = "rsocket" }
@@ -127,6 +129,8 @@ web = [
     "ktor-server-config-yaml",
     "ktor-server-metrics-micrometer",
     "ktor-server-call-id",
+    "ktor-server-request-validation",
+    "ktor-server-status-pages",
     "kompendium"
 ]
 micrometer = ["micrometer", "micrometer-registry-otlp", "micrometer-reactor", "micrometer-tracing", "micrometer-tracing-otel", "micrometer-context-propagation"]

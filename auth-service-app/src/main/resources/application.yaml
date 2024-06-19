@@ -6,10 +6,15 @@ ktor:
     port: 8080
   application:
     modules:
-      - ru.somarov.auth.infrastructure.ApplicationConfigKt.config
+      - ru.somarov.auth.infrastructure.config.ApplicationConfigKt.config
 
 application:
   name: "$APP_NAME:undefined"
   instance: "$APP_INSTANCE:undefined" # TODO: add kuber var
-  otlp:
-    url: "$OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317"
+  otel:
+    protocol: "http"
+    host: "localhost"
+    logsPort: "4317"
+    metricsPort: "4317"
+    tracingPort: "4317"
+    tracingProbability: "0.1"

@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.rsocket
+package ru.somarov.auth.infrastructure
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
@@ -41,7 +41,6 @@ internal class ServerObservabilityInterceptor(
     private val logger = KtorSimpleLogger(this.javaClass.name)
     private val encoding: Charset = Charset.forName("UTF8")
     private var cborMapper = ObjectMapper(CBORFactory()).registerKotlinModule()
-
 
     override fun intercept(input: RSocket): RSocket {
         val wrapper = getRSocketWrapper(input)
