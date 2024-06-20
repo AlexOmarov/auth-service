@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.config
+package ru.somarov.auth.infrastructure.config.otel.context
 
 import io.ktor.server.application.ApplicationCall
 import io.micrometer.observation.transport.ReceiverContext

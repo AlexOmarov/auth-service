@@ -1,5 +1,6 @@
-package ru.somarov.auth.infrastructure.config
+package ru.somarov.auth.infrastructure
 
+import createOpenTelemetrySdk
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.cbor.cbor
 import io.ktor.server.application.Application
@@ -52,8 +53,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import ru.somarov.auth.application.Service
-import ru.somarov.auth.infrastructure.ServerObservabilityInterceptor
-import ru.somarov.auth.infrastructure.config.OpentelemetrySdkConfig.sdk
+import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallReceiverContext
+import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallSenderContext
+import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
 import ru.somarov.auth.presentation.auth
 import ru.somarov.auth.presentation.authSocket
 import ru.somarov.auth.presentation.request.AuthorizationRequest
@@ -65,30 +67,19 @@ import java.util.TimeZone
 @OptIn(ExperimentalSerializationApi::class)
 internal fun Application.config() {
     val logger = KtorSimpleLogger(this.javaClass.name)
-    val env = environment
+
     val buildProps = getBuildProperties()
 
-    val sdk = sdk(
-        OpentelemetrySdkConfig.ObservabilityProps(
-            name = env.get("application.name"),
-            protocol = env.get("application.otel.protocol"),
-            host = env.get("application.otel.host"),
-            logsPort = env.get("application.otel.logsPort").toInt(),
-            metricsPort = env.get("application.otel.metricsPort").toInt(),
-            tracingPort = env.get("application.otel.tracingPort").toInt(),
-            tracingProbability = env.get("application.otel.tracingProbability").toDouble(),
-        )
-    )
-    OpenTelemetryAppender.install(sdk)
+    val sdk = createOpenTelemetrySdk(environment)
+
 
     val oteltracer =
         sdk.getTracer(
-            "ktor_${env.get("application.name")}",
+            "ktor_${environment.get("application.name")}",
             buildProps.getProperty("build.version", "undefined")
         )
     val listener = Slf4JEventListener()
     val publisher = { it: Any -> listener.onEvent(it) }
-    ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
     val tracer = OtelTracer(oteltracer, OtelCurrentTraceContext(), publisher)
     val propagator = OtelPropagator(sdk.propagators, oteltracer)
     val observationRegistry = ObservationRegistry.create().also {
@@ -107,10 +98,13 @@ internal fun Application.config() {
             )
     }
 
+    ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
+    OpenTelemetryAppender.install(sdk)
+
     val meterRegistry = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM).also {
         it.config().commonTags(
-            "application", env.get("application.name"),
-            "instance", env.get("application.instance")
+            "application", environment.get("application.name"),
+            "instance", environment.get("application.instance")
         )
     }
 
@@ -190,14 +184,14 @@ internal fun Application.config() {
         }
     }
 
-    val service = Service(env)
+    val service = Service(environment)
 
     routing {
         openAPI("openapi")
         swaggerUI("swagger")
 
         auth(service)
-        authSocket(Service(env))
+        authSocket(service)
     }
 }
 
