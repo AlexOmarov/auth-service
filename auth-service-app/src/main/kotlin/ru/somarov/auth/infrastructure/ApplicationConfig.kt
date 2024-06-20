@@ -1,6 +1,6 @@
 package ru.somarov.auth.infrastructure
 
-import createOpenTelemetrySdk
+import ru.somarov.auth.infrastructure.config.otel.createOpenTelemetrySdk
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.cbor.cbor
 import io.ktor.server.application.Application
