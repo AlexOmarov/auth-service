@@ -3,7 +3,7 @@ package ru.somarov.auth.presentation.consumers
 import io.ktor.server.application.ApplicationEnvironment
 import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
-import ru.somarov.auth.application.Service
+import ru.somarov.auth.application.service.Service
 import ru.somarov.auth.infrastructure.kafka.Consumer
 import ru.somarov.auth.infrastructure.kafka.Producer
 import ru.somarov.auth.infrastructure.kafka.Result

@@ -51,11 +51,11 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
-import ru.somarov.auth.application.Service
+import ru.somarov.auth.application.service.Service
 import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallReceiverContext
 import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallSenderContext
 import ru.somarov.auth.infrastructure.config.otel.createOpenTelemetrySdk
-import ru.somarov.auth.infrastructure.db.ClientRepo
+import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.db.DatabaseClient
 import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
 import ru.somarov.auth.presentation.http.auth
