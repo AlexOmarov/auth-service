@@ -11,6 +11,11 @@ jackson = "2.17.1"
 kotlin-reactor="1.8.1"
 kotlin-datetime="0.6.0"
 
+r2dbc-pool="1.0.1.RELEASE"
+reactor-pool="1.0.5"
+
+jakarta-validation="3.0.2"
+
 logstash-logback-encoder = "7.4"
 otel-logback-encoder = "2.4.0-alpha"
 logback = "1.5.6"
@@ -46,13 +51,18 @@ reactor-test = { group = "io.projectreactor", name = "reactor-test", version.ref
 detekt-ktlint = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 
 flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref="flyway" }
+r2dbc-pool = { group = "io.r2dbc", name = "r2dbc-pool", version.ref="r2dbc-pool" }
+
 flyway-postgres = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref="flyway" }
 postgresql = { group = "org.postgresql", name = "postgresql", version.ref="postgresql" }
 r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
 
+reactor-pool = { group = "io.projectreactor.addons", name = "reactor-pool", version.ref = "reactor-pool" }
+
 junit-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref="junit" }
 junit-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref="junit" }
 junit-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref="junit-launcher" }
+jakarta-validation-api = { group = "jakarta.validation", name = "jakarta.validation-api", version.ref="jakarta-validation" }
 
 logback = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
 logback-logstash = { group = "net.logstash.logback", name = "logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
@@ -90,8 +100,6 @@ kotlin-jackson-cbor = { group = "com.fasterxml.jackson.dataformat", name = "jack
 kotlin-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor", version.ref = "kotlin-reactor" }
 kotlin-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlin-datetime" }
 
-
-
 kompendium = { group = "io.bkbn", name = "kompendium-core", version.ref = "kompendium" }
 
 otel-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "otel" }
@@ -114,7 +122,7 @@ rsocket-micrometer = { module = "io.rsocket:rsocket-micrometer", version.ref = "
 
 [bundles]
 kafka = ["kafka",  "testcontainers-kafka"]
-database = [ "flyway-core"]
+database = ["flyway-core", "r2dbc-pool", "reactor-pool"]
 test = ["junit-api", "junit-engine", "testcontainers-junit", "mockito", "awaitility", "reactor-test"]
 postgres = ["flyway-postgres", "postgresql", "testcontainers-postgres", "r2dbc-postgresql"]
 redis = ["testcontainers-redis"]
@@ -131,7 +139,8 @@ web = [
     "ktor-server-call-id",
     "ktor-server-request-validation",
     "ktor-server-status-pages",
-    "kompendium"
+    "kompendium",
+    "jakarta-validation-api"
 ]
 micrometer = ["micrometer", "micrometer-registry-otlp", "micrometer-reactor", "micrometer-tracing", "micrometer-tracing-otel", "micrometer-context-propagation"]
 shedlock = ["shedlock-core", "shedlock-provider-r2dbc"]

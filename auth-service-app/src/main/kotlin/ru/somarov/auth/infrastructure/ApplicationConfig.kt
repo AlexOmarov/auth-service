@@ -1,6 +1,5 @@
 package ru.somarov.auth.infrastructure
 
-import ru.somarov.auth.infrastructure.config.otel.createOpenTelemetrySdk
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.cbor.cbor
 import io.ktor.server.application.Application
@@ -55,11 +54,14 @@ import kotlinx.serialization.cbor.Cbor
 import ru.somarov.auth.application.Service
 import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallReceiverContext
 import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallSenderContext
+import ru.somarov.auth.infrastructure.config.otel.createOpenTelemetrySdk
+import ru.somarov.auth.infrastructure.db.ClientRepo
+import ru.somarov.auth.infrastructure.db.DatabaseClient
 import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
-import ru.somarov.auth.presentation.auth
-import ru.somarov.auth.presentation.authSocket
+import ru.somarov.auth.presentation.http.auth
 import ru.somarov.auth.presentation.request.AuthorizationRequest
 import ru.somarov.auth.presentation.response.ErrorResponse
+import ru.somarov.auth.presentation.rsocket.authSocket
 import java.util.Properties
 import java.util.TimeZone
 
@@ -71,7 +73,6 @@ internal fun Application.config() {
     val buildProps = getBuildProperties()
 
     val sdk = createOpenTelemetrySdk(environment)
-
 
     val oteltracer =
         sdk.getTracer(
@@ -183,8 +184,9 @@ internal fun Application.config() {
             observation.stop()
         }
     }
-
-    val service = Service(environment)
+    val dbClient = DatabaseClient(environment, meterRegistry)
+    val repo = ClientRepo(dbClient)
+    val service = Service(repo)
 
     routing {
         openAPI("openapi")

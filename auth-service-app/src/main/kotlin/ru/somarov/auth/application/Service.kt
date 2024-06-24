@@ -1,13 +1,14 @@
 package ru.somarov.auth.application
 
-import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.util.logging.KtorSimpleLogger
+import ru.somarov.auth.infrastructure.db.ClientRepo
 
-internal class Service(private val env: ApplicationEnvironment) {
-    private val logger = KtorSimpleLogger("ru.somarov.auth.application.Service")
-    fun makeWork(): String {
-        val name = env.config.property("application.name").getString()
-        logger.info("hi sfdgs $name")
-        return name
+class Service(private val clientRepo: ClientRepo) {
+    private val logger = KtorSimpleLogger(this.javaClass.name)
+
+    suspend fun makeWork(): String {
+        val clients = clientRepo.getAll()
+        clients.forEach { logger.info("Hi, ${it.email}") }
+        return "done"
     }
 }
