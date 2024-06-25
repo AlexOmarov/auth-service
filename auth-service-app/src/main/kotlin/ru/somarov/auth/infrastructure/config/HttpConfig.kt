@@ -13,7 +13,7 @@ import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
-import ru.somarov.auth.infrastructure.otel.context.ApplicationCallReceiverContext
+import ru.somarov.auth.infrastructure.otel.ApplicationCallReceiverContext
 
 fun setupHttp(application: Application, observationRegistry: ObservationRegistry) {
     val logger = KtorSimpleLogger("RequestResponseConfig")

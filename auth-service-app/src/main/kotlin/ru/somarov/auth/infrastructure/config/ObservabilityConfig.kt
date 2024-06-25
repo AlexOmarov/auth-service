@@ -25,8 +25,8 @@ import io.rsocket.micrometer.observation.ByteBufGetter
 import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
-import ru.somarov.auth.infrastructure.otel.context.ApplicationCallReceiverContext
-import ru.somarov.auth.infrastructure.otel.context.ApplicationCallSenderContext
+import ru.somarov.auth.infrastructure.otel.ApplicationCallReceiverContext
+import ru.somarov.auth.infrastructure.otel.ApplicationCallSenderContext
 import ru.somarov.auth.infrastructure.otel.createOpenTelemetrySdk
 import java.util.Properties
 
