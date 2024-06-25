@@ -10,7 +10,7 @@ ktor:
 
 application:
   name: "$APP_NAME:undefined"
-  instance: "$APP_INSTANCE:undefined" # TODO: add kuber var
+  instance: "HOSTNAME:undefined"
   otel:
     protocol: "http"
     host: "localhost"

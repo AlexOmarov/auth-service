@@ -20,6 +20,7 @@ dependencies {
     implementation(libs.bundles.web)
     implementation(libs.bundles.kafka)
     implementation(libs.bundles.database)
+    implementation(libs.bundles.shedlock)
 
     implementation(libs.bundles.postgres)
     implementation(libs.bundles.redis)

@@ -23,7 +23,7 @@ import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
 class DatabaseClient(env: ApplicationEnvironment, registry: MeterRegistry) {
-    private val factory: ConnectionFactory
+    val factory: ConnectionFactory
 
     init {
         factory = createFactory(env, registry)

@@ -2,9 +2,11 @@ package ru.somarov.auth.infrastructure
 
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.cbor.cbor
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCallPipeline
-import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.application.ApplicationStarted
+import io.ktor.server.application.ApplicationStopped
 import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
@@ -51,17 +53,25 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
+import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
+import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
+import ru.somarov.auth.application.scheduler.Scheduler
 import ru.somarov.auth.application.service.Service
 import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallReceiverContext
 import ru.somarov.auth.infrastructure.config.otel.context.ApplicationCallSenderContext
 import ru.somarov.auth.infrastructure.config.otel.createOpenTelemetrySdk
-import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.db.DatabaseClient
+import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
+import ru.somarov.auth.presentation.consumers.MailConsumer
+import ru.somarov.auth.presentation.consumers.RetryConsumer
 import ru.somarov.auth.presentation.http.auth
 import ru.somarov.auth.presentation.request.AuthorizationRequest
 import ru.somarov.auth.presentation.response.ErrorResponse
 import ru.somarov.auth.presentation.rsocket.authSocket
+import java.time.Duration
+import java.time.Instant
 import java.util.Properties
 import java.util.TimeZone
 
@@ -76,7 +86,7 @@ internal fun Application.config() {
 
     val oteltracer =
         sdk.getTracer(
-            "ktor_${environment.get("application.name")}",
+            "ktor_${environment.config.property("application.name").getString()}",
             buildProps.getProperty("build.version", "undefined")
         )
     val listener = Slf4JEventListener()
@@ -104,8 +114,8 @@ internal fun Application.config() {
 
     val meterRegistry = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM).also {
         it.config().commonTags(
-            "application", environment.get("application.name"),
-            "instance", environment.get("application.instance")
+            "application", environment.config.property("application.name").getString(),
+            "instance", environment.config.property("application.instance").getString()
         )
     }
 
@@ -121,6 +131,7 @@ internal fun Application.config() {
     }
 
     install(ContentNegotiation) { cbor(Cbor { ignoreUnknownKeys = true }) }
+    install(ContentNegotiation) { json() }
 
     install(RequestValidation) {
         validate<AuthorizationRequest> { request ->
@@ -187,6 +198,45 @@ internal fun Application.config() {
     val dbClient = DatabaseClient(environment, meterRegistry)
     val repo = ClientRepo(dbClient)
     val service = Service(repo)
+    val executor = DefaultLockingTaskExecutor(R2dbcLockProvider(dbClient.factory))
+    val scheduler = Scheduler(executor)
+
+    scheduler.schedule(
+        LockConfiguration(
+            Instant.now(),
+            "FIRST_TASK",
+            Duration.parse("PT1S"),
+            Duration.ZERO,
+        )
+    ) { println("FIRST_TASK") } // every 5000 milliseconds
+    scheduler.schedule(
+        LockConfiguration(
+            Instant.now(),
+            "SECOND_TASK",
+            Duration.parse("PT2S"),
+            Duration.ZERO,
+        )
+    ) { println("SECOND_TASK") } // every 10000 milliseconds
+    scheduler.schedule(
+        LockConfiguration(
+            Instant.now(),
+            "SECOND_TASK",
+            Duration.parse("PT2S"),
+            Duration.ZERO,
+        )
+    ) { println("SECOND_TASK") } // every 10000 milliseconds
+
+    scheduler.start()
+
+    executor.executeWithLock(
+        Runnable { println("hello") },
+        LockConfiguration(
+            Instant.now(),
+            "LOCK_NAME",
+            Duration.parse("PT10S"),
+            Duration.ZERO,
+        )
+    )
 
     routing {
         openAPI("openapi")
@@ -195,6 +245,21 @@ internal fun Application.config() {
         auth(service)
         authSocket(service)
     }
+
+    val consumer = MailConsumer(service, environment, observationRegistry)
+    val retryConsumer = RetryConsumer(environment, listOf(consumer), observationRegistry)
+
+    environment.monitor.subscribe(ApplicationStarted) {
+        println("My app is ready to roll")
+        consumer.start()
+        retryConsumer.start()
+
+    }
+
+    environment.monitor.subscribe(ApplicationStopped) {
+        scheduler.stop()
+    }
+
 }
 
 private fun getBuildProperties(): Properties {
@@ -203,8 +268,4 @@ private fun getBuildProperties(): Properties {
         properties.load(it)
     }
     return properties
-}
-
-private fun ApplicationEnvironment.get(path: String): String {
-    return this.config.property(path).getString()
 }
