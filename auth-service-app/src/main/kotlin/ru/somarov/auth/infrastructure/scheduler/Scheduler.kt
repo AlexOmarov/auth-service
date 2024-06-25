@@ -1,5 +1,6 @@
-package ru.somarov.auth.application.scheduler
+package ru.somarov.auth.infrastructure.scheduler
 
+import io.r2dbc.spi.ConnectionFactory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,10 +14,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
 
-class Scheduler(private val executor: DefaultLockingTaskExecutor) {
+class Scheduler(factory: ConnectionFactory) {
     private val tasks = mutableListOf<Pair<suspend () -> Unit, LockConfiguration>>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val executor = DefaultLockingTaskExecutor(R2dbcLockProvider(factory))
 
     fun schedule(config: LockConfiguration, task: suspend () -> Unit) {
         tasks.add(task to config)

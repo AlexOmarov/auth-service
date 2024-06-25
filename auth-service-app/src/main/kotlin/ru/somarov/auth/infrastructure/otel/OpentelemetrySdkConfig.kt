@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.config.otel
+package ru.somarov.auth.infrastructure.otel
 
 import io.ktor.server.application.ApplicationEnvironment
 import io.opentelemetry.api.common.AttributeKey
