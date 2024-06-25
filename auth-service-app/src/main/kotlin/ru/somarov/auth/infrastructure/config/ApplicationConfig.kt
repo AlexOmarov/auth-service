@@ -10,9 +10,11 @@ import ru.somarov.auth.application.service.SchedulerService
 import ru.somarov.auth.application.service.Service
 import ru.somarov.auth.infrastructure.db.DatabaseClient
 import ru.somarov.auth.infrastructure.db.repo.ClientRepo
+import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import ru.somarov.auth.presentation.consumers.MailConsumer
 import ru.somarov.auth.presentation.consumers.RetryConsumer
 import ru.somarov.auth.presentation.rsocket.authSocket
+import ru.somarov.auth.presentation.scheduler.registerTasks
 import java.util.TimeZone
 
 @Suppress("unused") // Referenced in application.yaml
@@ -21,17 +23,19 @@ internal fun Application.config() {
 
     val (meterRegistry, observationRegistry) = setupObservability(this)
 
-    setupPipeline(this)
-    setupHttp(this, observationRegistry)
-    setupRsocket(this, meterRegistry, observationRegistry)
-
     val dbClient = DatabaseClient(environment, meterRegistry)
     val repo = ClientRepo(dbClient)
     val service = Service(repo)
+    val schedulerService = SchedulerService(repo)
 
-    val scheduler = setupScheduler(dbClient.factory, SchedulerService(repo))
+    val scheduler = Scheduler(dbClient.factory)
     val consumer = MailConsumer(service, environment, observationRegistry)
     val retryConsumer = RetryConsumer(environment, listOf(consumer), observationRegistry)
+
+    setupPipeline(this)
+    setupHttp(this, observationRegistry)
+    setupRsocket(this, meterRegistry, observationRegistry)
+    registerTasks(scheduler, schedulerService)
 
     routing {
         openAPI("openapi")

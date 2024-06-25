@@ -11,6 +11,22 @@ ktor:
 application:
   name: "$APP_NAME:undefined"
   instance: "HOSTNAME:undefined"
+  db:
+    host: "$DB_HOST:localhost"
+    port: "$DB_PORT:5432"
+    db: "$DB_NAME:default"
+    schema: "$DB_SCHEMA:public"
+    user: "$DB_USER:user"
+    password: "$DB_PASSWORD:password"
+    connection-timeout: "$DB_CONNECTION_TIMEOUT:PT5S"
+    statement-timeout: "$DB_STATEMENT_TIMEOUT:PT5S"
+    pool:
+      max-size: "$DB_POOL_MAX_SIZE:8"
+      min-idle: "$DB_POOL_MIN_IDLE:2"
+      max-idle-time: "$DB_POOL_MAX_IDLE_TIME:PT1M"
+      max-life-time: "$DB_POOL_MAX_LIFE_TIME:PT1M"
+      validation-query: "$DB_POOL_VALIDATION_QUERY:SELECT 1"
+  kafka: "" # TODO
   otel:
     protocol: "http"
     host: "localhost"

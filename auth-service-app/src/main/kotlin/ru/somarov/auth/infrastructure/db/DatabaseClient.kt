@@ -18,9 +18,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
+import org.flywaydb.core.Flyway
 import reactor.core.scheduler.Schedulers
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
+
 
 class DatabaseClient(env: ApplicationEnvironment, registry: MeterRegistry) {
     val factory: ConnectionFactory
@@ -87,13 +89,28 @@ class DatabaseClient(env: ApplicationEnvironment, registry: MeterRegistry) {
     }
 
     private fun createFactory(env: ApplicationEnvironment, registry: MeterRegistry): ConnectionFactory {
+        val host = env.config.property("application.db.host").getString()
+        val port = env.config.property("application.db.port").getString().toInt()
+        val db = env.config.property("application.db.name").getString()
+        val schema = env.config.property("application.db.schema").getString()
+        val user = env.config.property("application.db.user").getString()
+        val password = env.config.property("application.db.password").getString()
+
+        val configuration = Flyway.configure()
+            .dataSource("jdbc:postgresql://${host}:${port}/${db}?currentSchema=${schema}&prepareThreshold=0", user, password)
+            .locations("filesystem:db/migration")
+
+        val flyway = Flyway(configuration)
+
+        flyway.migrate()
+
         val pgConfig = PostgresqlConnectionConfiguration.builder()
-            .host(env.config.property("application.db.host").getString())
-            .port(env.config.property("application.db.port").getString().toInt())
-            .database(env.config.property("application.db.name").getString())
-            .username(env.config.property("application.db.user").getString())
-            .password(env.config.property("application.db.password").getString())
-            .schema(env.config.property("application.db.schema").getString())
+            .host(host)
+            .port(port)
+            .database(db)
+            .schema(schema)
+            .username(user)
+            .password(password)
             .applicationName(env.config.property("application.name").getString())
             .autodetectExtensions(true)
             .connectTimeout(
