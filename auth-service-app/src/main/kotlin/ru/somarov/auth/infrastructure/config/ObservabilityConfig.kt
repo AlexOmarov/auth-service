@@ -25,6 +25,7 @@ import io.rsocket.micrometer.observation.ByteBufGetter
 import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
+import ru.somarov.auth.infrastructure.kafka.KafkaTracePropagator
 import ru.somarov.auth.infrastructure.otel.ApplicationCallReceiverContext
 import ru.somarov.auth.infrastructure.otel.ApplicationCallSenderContext
 import ru.somarov.auth.infrastructure.otel.createOpenTelemetrySdk
@@ -45,6 +46,7 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
     val propagator = OtelPropagator(sdk.propagators, oteltracer)
     val observationRegistry = ObservationRegistry.create().also {
         it.observationConfig()
+            .observationHandler(KafkaTracePropagator(tracer, propagator))
             .observationHandler(
                 PropagatingReceiverTracingObservationHandler<ApplicationCallReceiverContext>(tracer, propagator)
             )
