@@ -1,13 +1,13 @@
 application:
-  name: "$APP_NAME:undefined"
-  instance: "HOSTNAME:undefined"
+  name: "auth-service"
+  instance: "$HOSTNAME:undefined"
   db:
     host: "$DB_HOST:localhost"
     port: "$DB_PORT:5432"
-    db: "$DB_NAME:default"
-    schema: "$DB_SCHEMA:public"
-    user: "$DB_USER:user"
-    password: "$DB_PASSWORD:password"
+    name: "$DB_NAME:auth_service"
+    schema: "$DB_SCHEMA:auth_service"
+    user: "$DB_USER:auth_service"
+    password: "$DB_PASSWORD:auth_service"
     connection-timeout: "$DB_CONNECTION_TIMEOUT:PT5S"
     statement-timeout: "$DB_STATEMENT_TIMEOUT:PT5S"
     pool:
@@ -16,16 +16,51 @@ application:
       max-idle-time: "$DB_POOL_MAX_IDLE_TIME:PT1M"
       max-life-time: "$DB_POOL_MAX_LIFE_TIME:PT1M"
       validation-query: "$DB_POOL_VALIDATION_QUERY:SELECT 1"
-  kafka: "" # TODO
+  kafka:
+    brokers: "$KAFKA_BROKERS:localhost:9092"
+    group: "auth-service"
+    message-retry-attempts: "3"
+    reconnect:
+      attempts: "3"
+      jitter: "0.5"
+      period-seconds: "2"
+    consumers:
+      mail:
+        enabled: "$KAFKA_MAIL_CONSUMER_ENABLED:false"
+        topic: "$KAFKA_MAIL_CONSUMER_TOPIC:mail_service_mail_broadcast"
+        name: "mail"
+        delay: "PT0S"
+        reset: "earliest"
+        commit-interval: "PT1S"
+        max-poll-records: "50"
+      retry:
+        enabled: "$KAFKA_RETRY_CONSUMER_ENABLED:false"
+        topic: "$KAFKA_RETRY_CONSUMER_TOPIC:auth_service_retry"
+        name: "retry"
+        delay: "PT5S"
+        reset: "earliest"
+        commit-interval: "PT1S"
+        max-poll-records: "10"
+    producers:
+      retry:
+        enabled: "$KAFKA_RETRY_PRODUCING_ENABLED:false"
+        topic: "auth_service_retry"
+        max-in-flight: "1"
+      dlq:
+        enabled: "$KAFKA_RETRY_DLQ_ENABLED:false"
+        topic: "auth_service_dlq"
+        max-in-flight: "1"
   otel:
     protocol: "http"
     host: "localhost"
-    logsPort: "4317"
-    metricsPort: "4317"
-    tracingPort: "4317"
-    tracingProbability: "0.1"
+    logs-port: "4317"
+    metrics-port: "4318"
+    tracing-port: "4319"
+    tracing-probability: "1.0"
 
 ktor:
+  deployment:
+    port: 9099
   application:
     modules:
       - ru.somarov.auth.infrastructure.config.ApplicationConfigKt.config

@@ -1,12 +1,10 @@
 package ru.somarov.auth.infrastructure.db
 
-import io.ktor.server.application.ApplicationEnvironment
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
 import io.r2dbc.pool.ConnectionPool
 import io.r2dbc.pool.ConnectionPoolConfiguration
-import io.r2dbc.postgresql.MultiHostConnectionStrategy
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionFactory
 import io.r2dbc.postgresql.api.PostgresTransactionDefinition
@@ -20,15 +18,14 @@ import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import org.flywaydb.core.Flyway
 import reactor.core.scheduler.Schedulers
-import kotlin.time.Duration
+import ru.somarov.auth.infrastructure.props.AppProps
 import kotlin.time.toJavaDuration
 
-
-class DatabaseClient(env: ApplicationEnvironment, registry: MeterRegistry) {
+class DatabaseClient(props: AppProps, registry: MeterRegistry) {
     val factory: ConnectionFactory
 
     init {
-        factory = createFactory(env, registry)
+        factory = createFactory(props.db, registry, props.name)
     }
 
     @Suppress("kotlin:S6518") // Cannot replace with index accessor
@@ -57,9 +54,11 @@ class DatabaseClient(env: ApplicationEnvironment, registry: MeterRegistry) {
 
         val result = statement.execute()
             .asFlow()
-            .map { it.map { row, _ ->
-                mapper.invoke(row)
-            }.awaitSingle() }
+            .map {
+                it.map { row, _ ->
+                    mapper.invoke(row)
+                }.awaitSingle()
+            }
             .toList()
         return result
     }
@@ -79,73 +78,61 @@ class DatabaseClient(env: ApplicationEnvironment, registry: MeterRegistry) {
 
         val result = statement.execute()
             .asFlow()
-            .map { it.map { row, _ ->
-                mapper.invoke(row)
-            }.awaitSingle() }
+            .map {
+                it.map { row, _ ->
+                    mapper.invoke(row)
+                }.awaitSingle()
+            }
             .toList()
         connection.commitTransaction()
         connection.releaseSavepoint("release") // how to release?
         return result
     }
 
-    private fun createFactory(env: ApplicationEnvironment, registry: MeterRegistry): ConnectionFactory {
-        val host = env.config.property("application.db.host").getString()
-        val port = env.config.property("application.db.port").getString().toInt()
-        val db = env.config.property("application.db.name").getString()
-        val schema = env.config.property("application.db.schema").getString()
-        val user = env.config.property("application.db.user").getString()
-        val password = env.config.property("application.db.password").getString()
+    private fun createFactory(props: AppProps.DbProps, registry: MeterRegistry, name: String): ConnectionFactory {
 
         val configuration = Flyway.configure()
-            .dataSource("jdbc:postgresql://${host}:${port}/${db}?currentSchema=${schema}&prepareThreshold=0", user, password)
-            .locations("filesystem:db/migration")
-
+            .dataSource(
+                "jdbc:postgresql://${props.host}:${props.port}/${props.name}?" +
+                    "currentSchema=${props.schema}&prepareThreshold=0",
+                props.user,
+                props.password
+            )
+            .locations("classpath:db/migration")
         val flyway = Flyway(configuration)
 
         flyway.migrate()
 
         val pgConfig = PostgresqlConnectionConfiguration.builder()
-            .host(host)
-            .port(port)
-            .database(db)
-            .schema(schema)
-            .username(user)
-            .password(password)
-            .applicationName(env.config.property("application.name").getString())
+            .host(props.host)
+            .port(props.port)
+            .database(props.name)
+            .schema(props.schema)
+            .username(props.user)
+            .password(props.password)
+            .applicationName(name)
             .autodetectExtensions(true)
-            .connectTimeout(
-                Duration.parse(env.config.property("application.db.connection-timeout").getString()).toJavaDuration()
-            )
-            .targetServerType(MultiHostConnectionStrategy.TargetServerType.PRIMARY)
-            .statementTimeout(
-                Duration.parse(env.config.property("application.db.statement-timeout").getString()).toJavaDuration()
-            )
+            .connectTimeout(props.connectionTimeout.toJavaDuration())
+            .statementTimeout(props.statementTimeout.toJavaDuration())
             .preparedStatementCacheQueries(0)
             .build()
-
         val factory = PostgresqlConnectionFactory(pgConfig)
 
         val scheduler = Schedulers.boundedElastic()
 
-        val poolName = "${env.config.property("application.name").getString()}_pool"
+        val poolName = "${name}_pool"
 
         val conf = ConnectionPoolConfiguration.builder()
             .name(poolName)
-            .maxSize(env.config.property("application.db.pool.max-size").getString().toInt())
+            .maxSize(props.pool.maxSize)
             .allocatorSubscribeOn(scheduler)
             .connectionFactory(factory)
-            .minIdle(env.config.property("application.db.pool.min-idle").getString().toInt())
-            .maxIdleTime(
-                Duration.parse(env.config.property("application.db.pool.max-idle-time").getString())
-                    .toJavaDuration()
-            )
-            .maxLifeTime(
-                Duration.parse(env.config.property("application.db.pool.max-life-time").getString())
-                    .toJavaDuration()
-            )
+            .minIdle(props.pool.minIdle)
+            .maxIdleTime(props.pool.maxIdleTime.toJavaDuration())
+            .maxLifeTime(props.pool.maxLifeTime.toJavaDuration())
             .registerJmx(true)
             .validationDepth(ValidationDepth.REMOTE)
-            .validationQuery(env.config.property("application.db.pool.validation-query").getString())
+            .validationQuery(props.pool.validationQuery)
             .build()
 
         val pool = ConnectionPool(conf)

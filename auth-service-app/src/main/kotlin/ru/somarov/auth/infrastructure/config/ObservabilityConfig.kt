@@ -28,15 +28,15 @@ import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandl
 import ru.somarov.auth.infrastructure.otel.ApplicationCallReceiverContext
 import ru.somarov.auth.infrastructure.otel.ApplicationCallSenderContext
 import ru.somarov.auth.infrastructure.otel.createOpenTelemetrySdk
+import ru.somarov.auth.infrastructure.props.AppProps
 import java.util.Properties
 
-fun setupObservability(application: Application): Pair<MeterRegistry, ObservationRegistry> {
-    val environment = application.environment
-    val sdk = createOpenTelemetrySdk(environment)
+fun setupObservability(application: Application, props: AppProps): Pair<MeterRegistry, ObservationRegistry> {
+    val sdk = createOpenTelemetrySdk(props)
     val buildProps = getBuildProperties()
     val oteltracer =
         sdk.getTracer(
-            "ktor_${environment.config.property("application.name").getString()}",
+            "ktor_${props.name}",
             buildProps.getProperty("build.version", "undefined")
         )
     val listener = Slf4JEventListener()
@@ -64,8 +64,8 @@ fun setupObservability(application: Application): Pair<MeterRegistry, Observatio
 
     val meterRegistry = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM).also {
         it.config().commonTags(
-            "application", environment.config.property("application.name").getString(),
-            "instance", environment.config.property("application.instance").getString()
+            "application", props.name,
+            "instance", props.instance
         )
     }
 

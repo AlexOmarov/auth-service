@@ -1,5 +1,6 @@
 package ru.somarov.auth.infrastructure.scheduler
 
+import io.ktor.util.logging.KtorSimpleLogger
 import io.r2dbc.spi.ConnectionFactory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +18,7 @@ import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
 
 class Scheduler(factory: ConnectionFactory) {
+    private val logger = KtorSimpleLogger(this.javaClass.name)
     private val tasks = mutableListOf<Pair<suspend () -> Unit, LockConfiguration>>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val executor = DefaultLockingTaskExecutor(R2dbcLockProvider(factory))
@@ -35,8 +37,10 @@ class Scheduler(factory: ConnectionFactory) {
                     executor.executeWithLock(Runnable {
                         launch {
                             try {
+                                logger.info("Started task ${config.name}")
                                 task()
                                 deferred.complete(Unit)
+                                logger.info("Task ${config.name} is completed")
                             } catch (e: Exception) {
                                 deferred.completeExceptionally(e)
                             }

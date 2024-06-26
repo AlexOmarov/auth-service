@@ -11,24 +11,24 @@ fun registerTasks(scheduler: Scheduler, service: SchedulerService) {
         LockConfiguration(
             Instant.now(),
             "FIRST_TASK",
+            Duration.parse("PT1M"),
             Duration.parse("PT1S"),
-            Duration.ZERO,
         )
     ) { service.makeWorkInScheduler() }
     scheduler.schedule(
         LockConfiguration(
             Instant.now(),
             "SECOND_TASK",
-            Duration.parse("PT2S"),
-            Duration.ZERO,
+            Duration.parse("PT1M"),
+            Duration.parse("PT1S"),
         )
     ) { println("SECOND_TASK") }
     scheduler.schedule(
         LockConfiguration(
             Instant.now(),
             "SECOND_TASK",
-            Duration.parse("PT2S"),
-            Duration.ZERO,
+            Duration.parse("PT1M"),
+            Duration.parse("PT1S"),
         )
     ) { println("SECOND_TASK") }
 }

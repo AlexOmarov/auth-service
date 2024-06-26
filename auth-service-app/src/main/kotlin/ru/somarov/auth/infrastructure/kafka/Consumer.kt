@@ -3,9 +3,6 @@ package ru.somarov.auth.infrastructure.kafka
 import io.micrometer.core.instrument.kotlin.asContextElement
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
-import jakarta.validation.ConstraintViolationException
-import jakarta.validation.Validation
-import jakarta.validation.Validator
 import kotlinx.coroutines.reactor.mono
 import kotlinx.datetime.Clock
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -39,13 +36,11 @@ abstract class Consumer<T : Any>(
 
     private lateinit var disposable: Disposable
 
-    fun start(): Disposable {
+    fun start() {
         log.info("Starting ${props.name} consumer")
 
-        val validator = Validation.buildDefaultValidatorFactory().validator
-
-        return buildReceiver().receiveAutoAck().delayElements(Duration.ofSeconds(props.delaySeconds))
-            .concatMap { batch -> handleBatch(batch, validator) }
+        val flux = buildReceiver().receiveAutoAck().delayElements(Duration.ofSeconds(props.delaySeconds))
+            .concatMap { batch -> handleBatch(batch) }
             .doOnSubscribe { log.info("Consumer ${props.name} started") }
             .doOnTerminate { log.info("Consumer ${props.name} terminated") }
             .doOnError { throwable -> log.error("Got exception while processing records", throwable) }
@@ -53,7 +48,9 @@ abstract class Consumer<T : Any>(
                 Retry
                     .backoff(props.reconnectAttempts, Duration.ofSeconds(props.reconnectPeriodSeconds))
                     .jitter(props.reconnectJitter)
-            ).subscribe()
+            )
+
+        disposable = flux.subscribe()
     }
 
     fun stop() {
@@ -68,16 +65,16 @@ abstract class Consumer<T : Any>(
     abstract suspend fun handleMessage(message: T, metadata: Metadata): Result
     abstract suspend fun onFailedMessage(e: Exception?, message: T, metadata: Metadata)
 
-    private fun handleBatch(records: Flux<ConsumerRecord<String, T?>>, validator: Validator): Mono<Long> {
+    private fun handleBatch(records: Flux<ConsumerRecord<String, T?>>): Mono<Long> {
         return records
             .groupBy { record -> record.partition() }
             .flatMap { partitionRecords ->
                 if (props.strategy == ExecutionStrategy.SEQUENTIAL) {
                     // Process records within each partition sequentially
-                    partitionRecords.concatMap { record -> handleRecord(record, validator) }
+                    partitionRecords.concatMap { record -> handleRecord(record) }
                 } else {
                     // Process records within each partition parallel
-                    partitionRecords.flatMap { record -> handleRecord(record, validator) }
+                    partitionRecords.flatMap { record -> handleRecord(record) }
                 }.count()
             }
             .reduce(Long::plus) // Sum the counts across all partitions
@@ -87,7 +84,7 @@ abstract class Consumer<T : Any>(
             }
     }
 
-    private fun handleRecord(record: ConsumerRecord<String, T?>, validator: Validator): Mono<Result> {
+    private fun handleRecord(record: ConsumerRecord<String, T?>): Mono<Result> {
         val observation = Observation.createNotStarted(
             "kafka_observation",
             { KafkaRecordReceiverContext(record, props.name, id.toString()) },
@@ -103,8 +100,7 @@ abstract class Consumer<T : Any>(
                 mono(registry.asContextElement()) {
                     handle(
                         record.value()!!,
-                        Metadata(Clock.System.now(), record.key(), 0),
-                        validator
+                        Metadata(Clock.System.now(), record.key(), 0)
                     )
                 }
             }
@@ -114,14 +110,10 @@ abstract class Consumer<T : Any>(
     }
 
     @Suppress("TooGenericExceptionCaught") // Should be able to process every exception
-    private suspend fun handle(message: T, metadata: Metadata, validator: Validator): Result {
+    private suspend fun handle(message: T, metadata: Metadata): Result {
         log.info("Got $message with metadata $metadata to handle with retry")
 
         val result = try {
-            val constraintViolations = validator.validate(message)
-            if (constraintViolations.isNotEmpty()) {
-                throw ConstraintViolationException(constraintViolations)
-            }
             handleMessage(message, metadata)
         } catch (e: Exception) {
             log.error("Got exception while processing event $message with metadata $metadata", e)
@@ -145,7 +137,6 @@ abstract class Consumer<T : Any>(
         consumerProps[ConsumerConfig.MAX_POLL_RECORDS_CONFIG] = props.maxPollRecords
         consumerProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = props.offsetResetConfig
 
-        // Here we can set custom thread scheduler (withScheduler()...)
         val consProps = ReceiverOptions.create<String, T>(consumerProps)
             .commitInterval(Duration.ofSeconds(props.commitInterval))
             .withValueDeserializer { _, data ->

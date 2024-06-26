@@ -1,6 +1,5 @@
 package ru.somarov.auth.infrastructure.otel
 
-import io.ktor.server.application.ApplicationEnvironment
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
@@ -15,10 +14,9 @@ import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import io.opentelemetry.sdk.trace.samplers.Sampler
+import ru.somarov.auth.infrastructure.props.AppProps
 
-fun createOpenTelemetrySdk(env: ApplicationEnvironment): OpenTelemetrySdk {
-    val props = getOpenTelemetryProps(env)
-
+fun createOpenTelemetrySdk(props: AppProps): OpenTelemetrySdk {
     return OpenTelemetrySdk.builder()
         .setPropagators { W3CTraceContextPropagator.getInstance() }
         .setMeterProvider(buildMeterProvider(props))
@@ -27,19 +25,19 @@ fun createOpenTelemetrySdk(env: ApplicationEnvironment): OpenTelemetrySdk {
         .build()
 }
 
-private fun buildMeterProvider(props: ObservabilityProps): SdkMeterProvider {
+private fun buildMeterProvider(props: AppProps): SdkMeterProvider {
     println(props)
     val builder = SdkMeterProvider.builder()
     return builder.build()
 }
 
-private fun buildLoggerProvider(props: ObservabilityProps): SdkLoggerProvider {
+private fun buildLoggerProvider(props: AppProps): SdkLoggerProvider {
     val builder = SdkLoggerProvider
         .builder()
         .addLogRecordProcessor(
             BatchLogRecordProcessor.builder(
                 OtlpGrpcLogRecordExporter.builder()
-                    .setEndpoint("${props.protocol}://${props.host}:${props.logsPort}")
+                    .setEndpoint("${props.otel.protocol}://${props.otel.host}:${props.otel.logsPort}")
                     .build()
             ).build()
         )
@@ -56,8 +54,8 @@ private fun buildLoggerProvider(props: ObservabilityProps): SdkLoggerProvider {
     return builder.build()
 }
 
-private fun buildTracerProvider(props: ObservabilityProps): SdkTracerProvider {
-    val sampler = Sampler.parentBased(Sampler.traceIdRatioBased(props.tracingProbability))
+private fun buildTracerProvider(props: AppProps): SdkTracerProvider {
+    val sampler = Sampler.parentBased(Sampler.traceIdRatioBased(props.otel.tracingProbability))
     val resource = Resource.getDefault()
         .merge(Resource.create(Attributes.of(AttributeKey.stringKey("service.name"), props.name)))
 
@@ -65,29 +63,9 @@ private fun buildTracerProvider(props: ObservabilityProps): SdkTracerProvider {
         .addSpanProcessor(
             BatchSpanProcessor.builder(
                 OtlpGrpcSpanExporter.builder()
-                    .setEndpoint("${props.protocol}://${props.host}:${props.tracingPort}")
+                    .setEndpoint("${props.otel.protocol}://${props.otel.host}:${props.otel.tracingPort}")
                     .build()
             ).build()
         )
     return builder.build()
 }
-
-private fun getOpenTelemetryProps(env: ApplicationEnvironment) = ObservabilityProps(
-    name = env.config.property("application.name").getString(),
-    protocol = env.config.property("application.otel.protocol").getString(),
-    host = env.config.property("application.otel.host").getString(),
-    logsPort = env.config.property("application.otel.logsPort").getString().toInt(),
-    metricsPort = env.config.property("application.otel.metricsPort").getString().toInt(),
-    tracingPort = env.config.property("application.otel.tracingPort").getString().toInt(),
-    tracingProbability = env.config.property("application.otel.tracingProbability").getString().toDouble()
-)
-
-private data class ObservabilityProps(
-    val name: String,
-    val protocol: String,
-    val host: String,
-    val logsPort: Int,
-    val metricsPort: Int,
-    val tracingPort: Int,
-    val tracingProbability: Double
-)
