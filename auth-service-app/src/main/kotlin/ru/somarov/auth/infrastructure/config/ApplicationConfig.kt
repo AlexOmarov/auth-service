@@ -30,7 +30,7 @@ internal fun Application.config() {
     val service = Service(repo)
     val schedulerService = SchedulerService(repo)
 
-    val scheduler = Scheduler(dbClient.factory)
+    val scheduler = Scheduler(dbClient.factory, observationRegistry)
     val consumer = MailConsumer(service, props.kafka, observationRegistry)
     val retryConsumer = RetryConsumer(props.kafka, listOf(consumer), observationRegistry)
 

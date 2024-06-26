@@ -1,5 +1,5 @@
 application:
-  name: "auth-service"
+  name: "$APP_NAME:auth-service"
   instance: "$HOSTNAME:undefined"
   db:
     host: "$DB_HOST:localhost"

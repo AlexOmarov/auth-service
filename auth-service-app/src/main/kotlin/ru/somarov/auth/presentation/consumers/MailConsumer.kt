@@ -9,6 +9,7 @@ import ru.somarov.auth.infrastructure.kafka.Result
 import ru.somarov.auth.infrastructure.props.AppProps
 import ru.somarov.auth.presentation.event.Metadata
 import ru.somarov.auth.presentation.event.RetryMessage
+import ru.somarov.auth.presentation.event.broadcast.MailBroadcast
 import java.util.UUID
 import kotlin.time.DurationUnit
 
@@ -16,7 +17,7 @@ class MailConsumer(
     private val service: Service,
     private val props: AppProps.KafkaProps,
     registry: ObservationRegistry,
-) : Consumer<String>(
+) : Consumer<MailBroadcast>(
     props = ConsumerProps(
         topic = props.consumers.mail.topic,
         name = "Consumer_${props.consumers.mail.topic}_${props.consumers.mail.name}_${UUID.randomUUID()}",
@@ -33,7 +34,7 @@ class MailConsumer(
         reconnectPeriodSeconds = props.reconnect.periodSeconds
     ),
     registry = registry,
-    clazz = String::class.java
+    clazz = MailBroadcast::class.java
 ) {
     private val log = LoggerFactory.getLogger(this.javaClass)
 
@@ -55,12 +56,12 @@ class MailConsumer(
         ), registry, RetryMessage::class.java as Class<RetryMessage<out Any>>
     )
 
-    override suspend fun handleMessage(message: String, metadata: Metadata): Result {
-        service.makeWork()
+    override suspend fun handleMessage(message: MailBroadcast, metadata: Metadata): Result {
+        service.makeWork(message.toString())
         return Result(Result.Code.OK)
     }
 
-    override suspend fun onFailedMessage(e: Exception?, message: String, metadata: Metadata) {
+    override suspend fun onFailedMessage(e: Exception?, message: MailBroadcast, metadata: Metadata) {
         log.error("Got unsuccessful message processing: $message, exception ${e?.message}", e)
         val retryMessage = RetryMessage(payload = message, key = metadata.key, attempt = metadata.attempt + 1)
         if (metadata.attempt < props.messageRetryAttempts && props.producers.retry.enabled)

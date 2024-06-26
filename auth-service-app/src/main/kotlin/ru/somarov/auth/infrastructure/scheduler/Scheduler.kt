@@ -1,6 +1,7 @@
 package ru.somarov.auth.infrastructure.scheduler
 
 import io.ktor.util.logging.KtorSimpleLogger
+import io.micrometer.observation.ObservationRegistry
 import io.r2dbc.spi.ConnectionFactory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -17,7 +18,7 @@ import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
 
-class Scheduler(factory: ConnectionFactory) {
+class Scheduler(factory: ConnectionFactory, private val registry: ObservationRegistry) {
     private val logger = KtorSimpleLogger(this.javaClass.name)
     private val tasks = mutableListOf<Pair<suspend () -> Unit, LockConfiguration>>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

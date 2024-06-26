@@ -15,6 +15,7 @@ import io.r2dbc.spi.ValidationDepth
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import org.flywaydb.core.Flyway
 import reactor.core.scheduler.Schedulers
@@ -48,19 +49,15 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
         mapper: (row: Row) -> T
     ): List<T> {
         val connection = factory.create().awaitSingle()
-        val statement = connection
-            .createStatement(query)
+        val statement = connection.createStatement(query)
         params.forEach { (key, value) -> statement.bind(key, value) }
 
-        val result = statement.execute()
+        return statement.execute()
             .asFlow()
-            .map {
-                it.map { row, _ ->
-                    mapper.invoke(row)
-                }.awaitSingle()
-            }
+            .map { it.map { row, _ -> mapper(row) } }
+            .map { it.awaitFirstOrNull() }
             .toList()
-        return result
+            .filterNotNull()
     }
 
     @Suppress("kotlin:S6518") // Cannot replace with index accessor

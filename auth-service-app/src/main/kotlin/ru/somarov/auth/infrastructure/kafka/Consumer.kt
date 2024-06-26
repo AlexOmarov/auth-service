@@ -5,9 +5,8 @@ import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.reactor.mono
 import kotlinx.datetime.Clock
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerRecord
@@ -126,7 +125,6 @@ abstract class Consumer<T : Any>(
         return result
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     @Suppress("TooGenericExceptionCaught", "UNCHECKED_CAST")
     private fun buildReceiver(): KafkaReceiver<String, T?> {
         val consumerProps = HashMap<String, Any>()
@@ -141,9 +139,10 @@ abstract class Consumer<T : Any>(
             .commitInterval(Duration.ofSeconds(props.commitInterval))
             .withValueDeserializer { _, data ->
                 try {
-                    Cbor.Default.decodeFromByteArray(
-                        Cbor.serializersModule.serializer(this.clazz) as KSerializer<T>,
-                        data
+                    val str = String(data, Charsets.UTF_8)
+                    Json.Default.decodeFromString(
+                        Json.serializersModule.serializer(this.clazz) as KSerializer<T>,
+                        str
                     )
                 } catch (e: Exception) {
                     log.error("Got exception $e while trying to parse event from data $data")
