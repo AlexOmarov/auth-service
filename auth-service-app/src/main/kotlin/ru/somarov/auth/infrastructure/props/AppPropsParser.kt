@@ -58,15 +58,12 @@ fun parseConsumersProps(environment: ApplicationEnvironment): AppProps.KafkaCons
                 .toBoolean(),
             topic = environment.config.property("application.kafka.consumers.mail.topic").getString(),
             name = environment.config.property("application.kafka.consumers.mail.name").getString(),
-            delay = Duration.parse(
-                environment.config.property("application.kafka.consumers.mail.delay").getString()
-            ),
+            delay = environment.config.property("application.kafka.consumers.mail.delay-ms").getString().toLong(),
             reset = AppProps.KafkaResetConfig.valueOf(
                 environment.config.property("application.kafka.consumers.mail.reset").getString().uppercase()
             ),
-            commitInterval = Duration.parse(
-                environment.config.property("application.kafka.consumers.mail.commit-interval").getString()
-            ),
+            commitInterval = environment.config.property("application.kafka.consumers.mail.commit-interval-ms")
+                .getString().toLong(),
             maxPollRecords = environment.config.property("application.kafka.consumers.mail.max-poll-records")
                 .getString().toInt()
         ), retry = AppProps.KafkaConsumerProps(
@@ -74,15 +71,12 @@ fun parseConsumersProps(environment: ApplicationEnvironment): AppProps.KafkaCons
                 .toBoolean(),
             topic = environment.config.property("application.kafka.consumers.retry.topic").getString(),
             name = environment.config.property("application.kafka.consumers.retry.name").getString(),
-            delay = Duration.parse(
-                environment.config.property("application.kafka.consumers.retry.delay").getString()
-            ),
+            delay = environment.config.property("application.kafka.consumers.retry.delay-ms").getString().toLong(),
             reset = AppProps.KafkaResetConfig.valueOf(
                 environment.config.property("application.kafka.consumers.retry.reset").getString().uppercase()
             ),
-            commitInterval = Duration.parse(
-                environment.config.property("application.kafka.consumers.retry.commit-interval").getString()
-            ),
+            commitInterval = environment.config.property("application.kafka.consumers.retry.commit-interval-ms")
+                .getString().toLong(),
             maxPollRecords = environment.config.property("application.kafka.consumers.retry.max-poll-records")
                 .getString().toInt()
         )

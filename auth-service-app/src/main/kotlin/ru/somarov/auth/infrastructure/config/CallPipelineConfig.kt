@@ -15,6 +15,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import ru.somarov.auth.presentation.request.AuthorizationRequest
 import ru.somarov.auth.presentation.response.ErrorResponse
+import java.util.UUID
 
 @OptIn(ExperimentalSerializationApi::class)
 fun setupPipeline(application: Application) {
@@ -22,7 +23,7 @@ fun setupPipeline(application: Application) {
 
     application.install(RequestValidation) {
         validate<AuthorizationRequest> { request ->
-            if (request.authorization.accessToken.isEmpty())
+            if (request.userId == UUID.randomUUID())
                 ValidationResult.Invalid("A customer ID should be greater than 0")
             else
                 ValidationResult.Valid

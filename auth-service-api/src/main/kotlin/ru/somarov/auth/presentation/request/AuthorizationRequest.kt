@@ -9,6 +9,5 @@ import java.util.UUID
 @Schema(description = "Object which holds details of authorization")
 data class AuthorizationRequest(
     @Serializable(with = UUIDSerializer::class)
-    val userId: UUID,
-    val authorization: Authorization
+    val userId: UUID
 )

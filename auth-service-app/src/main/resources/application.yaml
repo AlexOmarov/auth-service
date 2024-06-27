@@ -29,18 +29,18 @@ application:
         enabled: "$KAFKA_MAIL_CONSUMER_ENABLED:false"
         topic: "$KAFKA_MAIL_CONSUMER_TOPIC:mail_service_mail_broadcast"
         name: "mail"
-        delay: "PT0S"
+        delay-ms: 0
         reset: "earliest"
-        commit-interval: "PT1S"
+        commit-interval-ms: 1000
         max-poll-records: "50"
       retry:
         enabled: "$KAFKA_RETRY_CONSUMER_ENABLED:false"
         topic: "$KAFKA_RETRY_CONSUMER_TOPIC:auth_service_retry"
         name: "retry"
-        delay: "PT5S"
+        delay-ms: 5000
         reset: "earliest"
-        commit-interval: "PT1S"
-        max-poll-records: "10"
+        commit-interval-ms: 1000
+        max-poll-records: "50"
     producers:
       retry:
         enabled: "$KAFKA_RETRY_PRODUCING_ENABLED:false"

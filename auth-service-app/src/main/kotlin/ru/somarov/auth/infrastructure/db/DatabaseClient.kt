@@ -10,14 +10,12 @@ import io.r2dbc.postgresql.PostgresqlConnectionFactory
 import io.r2dbc.postgresql.api.PostgresTransactionDefinition
 import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.IsolationLevel
-import io.r2dbc.spi.Row
+import io.r2dbc.spi.Result
 import io.r2dbc.spi.ValidationDepth
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
 import org.flywaydb.core.Flyway
+import org.reactivestreams.Publisher
 import reactor.core.scheduler.Schedulers
 import ru.somarov.auth.infrastructure.props.AppProps
 import kotlin.time.toJavaDuration
@@ -30,43 +28,32 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
     }
 
     @Suppress("kotlin:S6518") // Cannot replace with index accessor
-    suspend fun <T> executeActionInTransaction(
-        function: suspend () -> T,
-        isolationLevel: IsolationLevel = IsolationLevel.READ_COMMITTED
+    suspend fun <T> execute(
+        query: String,
+        params: Map<String, String>,
+        mapper: suspend (result: Publisher<out Result>) -> Publisher<out T>
     ): T {
         val connection = factory.create().awaitSingle()
-        connection.beginTransaction(PostgresTransactionDefinition.from(isolationLevel)).awaitSingle()
-        val result = function.invoke()
-        connection.commitTransaction()
-        connection.releaseSavepoint("release") // how to release?
-        return result
+        val res = try {
+            val statement = connection.createStatement(query)
+            params.forEach { (key, value) -> statement.bind(key, value) }
+            mapper(statement.execute()).awaitSingle()
+        } catch (e: Throwable) {
+            connection.close().awaitFirstOrNull()
+            throw e
+        } finally {
+            connection.close().awaitFirstOrNull()
+        }
+        return res
     }
 
     @Suppress("kotlin:S6518") // Cannot replace with index accessor
-    suspend fun <T> executeQuery(
+    suspend fun <T> transactional(
         query: String,
         params: Map<String, String>,
-        mapper: (row: Row) -> T
-    ): List<T> {
-        val connection = factory.create().awaitSingle()
-        val statement = connection.createStatement(query)
-        params.forEach { (key, value) -> statement.bind(key, value) }
-
-        return statement.execute()
-            .asFlow()
-            .map { it.map { row, _ -> mapper(row) } }
-            .map { it.awaitFirstOrNull() }
-            .toList()
-            .filterNotNull()
-    }
-
-    @Suppress("kotlin:S6518") // Cannot replace with index accessor
-    suspend fun <T> executeQueryInTransaction(
-        query: String,
-        params: Map<String, String>,
-        mapper: (row: Row) -> T,
+        mapper: (result: Publisher<out Result>) -> T,
         isolationLevel: IsolationLevel = IsolationLevel.READ_COMMITTED
-    ): List<T> {
+    ): T {
         val connection = factory.create().awaitSingle()
         connection.beginTransaction(PostgresTransactionDefinition.from(isolationLevel)).awaitSingle()
         val statement = connection
@@ -74,16 +61,10 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
         params.forEach { (key, value) -> statement.bind(key, value) }
 
         val result = statement.execute()
-            .asFlow()
-            .map {
-                it.map { row, _ ->
-                    mapper.invoke(row)
-                }.awaitSingle()
-            }
-            .toList()
+
         connection.commitTransaction()
         connection.releaseSavepoint("release") // how to release?
-        return result
+        return mapper(result)
     }
 
     private fun createFactory(props: AppProps.DbProps, registry: MeterRegistry, name: String): ConnectionFactory {

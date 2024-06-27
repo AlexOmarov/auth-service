@@ -23,12 +23,4 @@ fun registerTasks(scheduler: Scheduler, service: SchedulerService) {
             Duration.parse("PT1S"),
         )
     ) { println("SECOND_TASK") }
-    scheduler.schedule(
-        LockConfiguration(
-            Instant.now(),
-            "SECOND_TASK",
-            Duration.parse("PT1M"),
-            Duration.parse("PT1S"),
-        )
-    ) { println("SECOND_TASK") }
 }

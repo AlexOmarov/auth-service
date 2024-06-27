@@ -7,7 +7,7 @@ class SchedulerService(private val clientRepo: ClientRepo) {
     private val logger = KtorSimpleLogger(this.javaClass.name)
 
     suspend fun makeWorkInScheduler(): String {
-        val clients = clientRepo.getAll()
+        val clients = clientRepo.findAll()
         clients.forEach { logger.info("Hi, ${it.email}") }
         return "done"
     }

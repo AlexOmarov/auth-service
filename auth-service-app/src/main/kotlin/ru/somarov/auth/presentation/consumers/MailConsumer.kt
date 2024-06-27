@@ -11,7 +11,6 @@ import ru.somarov.auth.presentation.event.Metadata
 import ru.somarov.auth.presentation.event.RetryMessage
 import ru.somarov.auth.presentation.event.broadcast.MailBroadcast
 import java.util.UUID
-import kotlin.time.DurationUnit
 
 class MailConsumer(
     private val service: Service,
@@ -21,13 +20,13 @@ class MailConsumer(
     props = ConsumerProps(
         topic = props.consumers.mail.topic,
         name = "Consumer_${props.consumers.mail.topic}_${props.consumers.mail.name}_${UUID.randomUUID()}",
-        delaySeconds = props.consumers.mail.delay.toLong(DurationUnit.MILLISECONDS),
+        delayMs = props.consumers.mail.delay,
         strategy = ExecutionStrategy.PARALLEL,
         enabled = props.consumers.mail.enabled,
         brokers = props.brokers,
         groupId = props.group,
         offsetResetConfig = props.consumers.mail.reset.name.lowercase(),
-        commitInterval = props.consumers.mail.commitInterval.toLong(DurationUnit.MILLISECONDS),
+        commitInterval = props.consumers.mail.commitInterval,
         maxPollRecords = props.consumers.mail.maxPollRecords,
         reconnectAttempts = props.reconnect.attempts,
         reconnectJitter = props.reconnect.jitter,

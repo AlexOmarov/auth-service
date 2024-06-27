@@ -50,9 +50,9 @@ data class AppProps(
         val enabled: Boolean,
         val topic: String,
         val name: String,
-        val delay: Duration,
+        val delay: Long,
         val reset: KafkaResetConfig,
-        val commitInterval: Duration,
+        val commitInterval: Long,
         val maxPollRecords: Int
     )
 

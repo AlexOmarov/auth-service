@@ -10,7 +10,6 @@ import ru.somarov.auth.infrastructure.props.AppProps
 import ru.somarov.auth.presentation.event.Metadata
 import ru.somarov.auth.presentation.event.RetryMessage
 import java.util.UUID
-import kotlin.time.DurationUnit
 
 @Suppress("UNCHECKED_CAST")
 class RetryConsumer(
@@ -21,13 +20,13 @@ class RetryConsumer(
     props = ConsumerProps(
         topic = props.consumers.retry.topic,
         name = "Consumer_${props.consumers.retry.topic}_${props.consumers.retry.name}_${UUID.randomUUID()}",
-        delaySeconds = props.consumers.retry.delay.toLong(DurationUnit.MILLISECONDS),
+        delayMs = props.consumers.retry.delay,
         strategy = ExecutionStrategy.PARALLEL,
         enabled = props.consumers.retry.enabled,
         brokers = props.brokers,
         groupId = props.group,
         offsetResetConfig = props.consumers.retry.reset.name.lowercase(),
-        commitInterval = props.consumers.retry.commitInterval.toLong(DurationUnit.MILLISECONDS),
+        commitInterval = props.consumers.retry.commitInterval,
         maxPollRecords = props.consumers.retry.maxPollRecords,
         reconnectAttempts = props.reconnect.attempts,
         reconnectJitter = props.reconnect.jitter,

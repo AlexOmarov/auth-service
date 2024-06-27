@@ -38,7 +38,7 @@ abstract class Consumer<T : Any>(
     fun start() {
         log.info("Starting ${props.name} consumer")
 
-        val flux = buildReceiver().receiveAutoAck().delayElements(Duration.ofSeconds(props.delaySeconds))
+        val flux = buildReceiver().receiveAutoAck().delayElements(Duration.ofMillis(props.delayMs))
             .concatMap { batch -> handleBatch(batch) }
             .doOnSubscribe { log.info("Consumer ${props.name} started") }
             .doOnTerminate { log.info("Consumer ${props.name} terminated") }
@@ -136,7 +136,7 @@ abstract class Consumer<T : Any>(
         consumerProps[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = props.offsetResetConfig
 
         val consProps = ReceiverOptions.create<String, T>(consumerProps)
-            .commitInterval(Duration.ofSeconds(props.commitInterval))
+            .commitInterval(Duration.ofMillis(props.commitInterval))
             .withValueDeserializer { _, data ->
                 try {
                     val str = String(data, Charsets.UTF_8)
@@ -157,7 +157,7 @@ abstract class Consumer<T : Any>(
     data class ConsumerProps(
         val topic: String,
         val name: String = "Consumer_${topic}_${UUID.randomUUID()}",
-        val delaySeconds: Long = 0,
+        val delayMs: Long = 0,
         val strategy: ExecutionStrategy = ExecutionStrategy.PARALLEL,
         val enabled: Boolean = false,
         val brokers: String,
