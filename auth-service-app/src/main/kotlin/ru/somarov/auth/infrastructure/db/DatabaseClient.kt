@@ -27,7 +27,7 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
         factory = createFactory(props.db, registry, props.name)
     }
 
-    @Suppress("kotlin:S6518") // Cannot replace with index accessor
+    @Suppress("kotlin:S6518", "TooGenericExceptionCaught") // Cannot replace with index accessor
     suspend fun <T> execute(
         query: String,
         params: Map<String, String>,
