@@ -43,7 +43,8 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
                                 deferred.complete(Unit)
                                 logger.info("Task ${config.name} is completed")
                             } catch (e: Exception) {
-                                deferred.completeExceptionally(e)
+                                logger.error("Got error when trying to execute scheduled task $config", e)
+                                deferred.complete(Unit)
                             }
                         }
                     }, config)

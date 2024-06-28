@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -98,10 +98,10 @@ class Producer<T : Any>(
             .create<String, T>(producerProps)
             .withValueSerializer { _, data ->
                 try {
-                    Cbor.Default.encodeToByteArray(
-                        Cbor.serializersModule.serializer(this.clazz) as KSerializer<T>,
+                    Json.Default.encodeToString(
+                        Json.serializersModule.serializer(this.clazz) as KSerializer<T>,
                         data
-                    )
+                    ).toByteArray()
                 } catch (e: Exception) {
                     throw SerializationException("Error when serializing event to byte[]", e)
                 }

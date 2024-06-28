@@ -1,8 +1,5 @@
 package ru.somarov.auth.infrastructure.rsocket
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.ktor.util.logging.KtorSimpleLogger
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.core.readBytes
@@ -26,7 +23,6 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.flux
 import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -40,7 +36,6 @@ internal class ServerObservabilityInterceptor(
 
     private val logger = KtorSimpleLogger(this.javaClass.name)
     private val encoding: Charset = Charset.forName("UTF8")
-    private var cborMapper = ObjectMapper(CBORFactory()).registerKotlinModule()
 
     override fun intercept(input: RSocket): RSocket {
         val wrapper = getRSocketWrapper(input)
@@ -146,13 +141,12 @@ internal class ServerObservabilityInterceptor(
         val data = try {
             val array = payload.data.copy().readBytes()
             if (array.isNotEmpty()) {
-                val map = cborMapper.readValue(array, Any::class.java)
-                Json.Default.encodeToString(map)
+                Json.decodeFromString<String>(String(array))
             } else {
                 "Body is null"
             }
         } catch (e: SerializationException) {
-            logger.error("Got error while deserializing cbor to string", e)
+            logger.error("Got error while deserializing json to string", e)
             "Body is null"
         }
         var routing = "null"
