@@ -10,6 +10,7 @@ import ru.somarov.auth.application.service.SchedulerService
 import ru.somarov.auth.application.service.Service
 import ru.somarov.auth.infrastructure.db.DatabaseClient
 import ru.somarov.auth.infrastructure.db.repo.ClientRepo
+import ru.somarov.auth.infrastructure.db.repo.RevokedAuthorizationRepo
 import ru.somarov.auth.infrastructure.props.parseProps
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import ru.somarov.auth.presentation.consumers.MailConsumer
@@ -27,7 +28,8 @@ internal fun Application.config() {
 
     val dbClient = DatabaseClient(props, meterRegistry)
     val repo = ClientRepo(dbClient)
-    val service = Service(repo)
+    val revokedAuthorizationRepo = RevokedAuthorizationRepo(dbClient)
+    val service = Service(repo, revokedAuthorizationRepo)
     val schedulerService = SchedulerService(repo)
 
     val scheduler = Scheduler(dbClient.factory, observationRegistry)

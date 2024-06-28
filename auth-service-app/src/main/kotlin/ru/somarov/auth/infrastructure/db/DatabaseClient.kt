@@ -9,6 +9,7 @@ import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionFactory
 import io.r2dbc.postgresql.api.PostgresTransactionDefinition
+import io.r2dbc.spi.Connection
 import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.IsolationLevel
 import io.r2dbc.spi.Row
@@ -78,6 +79,27 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
                 "Got error while trying to perform transactional sql query: query - " +
                     "$query, params - $params, ex - ${e.message}", e
             )
+            throw e
+        } finally {
+            connection.commitTransaction()
+            connection.close().awaitFirstOrNull()
+        }
+        return res
+    }
+
+    @Suppress("kotlin:S6518", "TooGenericExceptionCaught") // Cannot replace with index accessor
+    suspend fun <T> transactional(
+        isolationLevel: IsolationLevel = IsolationLevel.READ_COMMITTED,
+        action: suspend (connection: Connection) -> T
+    ): T {
+        val connection = factory.create().awaitSingle()
+        val res = try {
+            connection.beginTransaction(PostgresTransactionDefinition.from(isolationLevel)).awaitSingle()
+            val result = action(connection)
+            connection.commitTransaction()
+            result
+        } catch (e: Throwable) {
+            logger.error("Got error while trying to perform transactional action", e)
             throw e
         } finally {
             connection.commitTransaction()
