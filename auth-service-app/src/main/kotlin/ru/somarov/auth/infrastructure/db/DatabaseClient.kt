@@ -67,7 +67,7 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
     ): List<T> {
         val connection = factory.create().awaitSingle()
         val res = try {
-            connection.beginTransaction(PostgresTransactionDefinition.from(isolationLevel)).awaitSingle()
+            connection.beginTransaction(PostgresTransactionDefinition.from(isolationLevel)).awaitFirstOrNull()
             val statement = connection.createStatement(query)
             params.forEach { (key, value) -> statement.bind(key, value) }
             val result = statement.execute().asFlow()
