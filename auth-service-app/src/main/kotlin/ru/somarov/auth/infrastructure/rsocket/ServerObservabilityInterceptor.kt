@@ -14,7 +14,6 @@ import io.rsocket.kotlin.payload.Payload
 import io.rsocket.metadata.CompositeMetadata
 import io.rsocket.metadata.WellKnownMimeType
 import io.rsocket.micrometer.MicrometerRSocketInterceptor
-import io.rsocket.micrometer.observation.ObservationRequesterRSocketProxy
 import io.rsocket.micrometer.observation.ObservationResponderRSocketProxy
 import io.rsocket.util.DefaultPayload
 import kotlinx.coroutines.Dispatchers
@@ -37,10 +36,7 @@ internal class ServerObservabilityInterceptor(
     override fun intercept(input: RSocket): RSocket {
         val wrapper = getRSocketWrapper(input)
         val measuredRSocket = MicrometerRSocketInterceptor(meterRegistry).apply(wrapper) as io.rsocket.RSocket
-        val proxy = ObservationRequesterRSocketProxy(
-            ObservationResponderRSocketProxy(measuredRSocket, observationRegistry),
-            observationRegistry
-        )
+        val proxy = ObservationResponderRSocketProxy(measuredRSocket, observationRegistry)
 
         return object : RSocket {
             override val coroutineContext: CoroutineContext

@@ -92,19 +92,20 @@ abstract class Consumer<T : Any>(
                 { KafkaRecordReceiverContext(record, props.name, id.toString()) },
                 registry
             )
-            val scope = observation.openScope()
             try {
-                withContext(registry.asContextElement()) {
-                    handle(
-                        record.value()!!,
-                        Metadata(Clock.System.now(), record.key(), 0)
-                    )
+                observation.openScope().use {
+                    withContext(registry.asContextElement()) {
+                        handle(
+                            record.value()!!,
+                            Metadata(Clock.System.now(), record.key(), 0)
+                        )
+                    }
                 }
             } catch (e: Throwable) {
                 log.error("Got error while processing kafka record: $record, exception: ${e.message}", e)
+                observation.error(e)
                 throw e
             } finally {
-                scope.close()
                 observation.stop()
             }
         }

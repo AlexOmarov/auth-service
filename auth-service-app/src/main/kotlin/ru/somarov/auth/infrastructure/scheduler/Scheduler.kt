@@ -5,13 +5,13 @@ import io.micrometer.core.instrument.kotlin.asContextElement
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import io.r2dbc.spi.ConnectionFactory
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -35,35 +35,39 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
         tasks.forEach { (task, config) ->
             scope.launch {
                 while (isActive) {
-                    val deferred = CompletableDeferred<Unit>()
                     val startTime = System.currentTimeMillis()
-                    @Suppress("TooGenericExceptionCaught") // have to catch all exceptions to complete deferred
-                    executor.executeWithLock(Runnable {
-                        scope.launch {
-                            val obs = Observation.start(config.name, registry)
-                            val scope = obs.openScope()
-                            withContext(registry.asContextElement()) {
-                                try {
-                                    logger.info("Started task ${config.name}")
-                                    task()
-                                    logger.info("Task ${config.name} is completed")
-                                } catch (e: Exception) {
-                                    logger.error("Got error when trying to execute scheduled task $config", e)
-                                } finally {
-                                    scope.close()
-                                    obs.stop()
-                                    deferred.complete(Unit)
-                                }
-                            }
-                        }
-                    }, config)
-                    deferred.await()
+                    schedule(task, config)
                     val endTime = System.currentTimeMillis()
-                    val elapsedTime = endTime - startTime
-                    delay(maxOf(0, config.lockAtLeastFor.toMillis() - elapsedTime))
+                    delay(maxOf(0, config.lockAtLeastFor.toMillis() - endTime + startTime))
                 }
             }
         }
+    }
+
+    private suspend fun schedule(task: suspend () -> Unit, config: LockConfiguration) {
+        @Suppress("TooGenericExceptionCaught") // have to catch all exceptions to complete deferred
+        executor.executeWithLock(Runnable {
+            runBlocking(Dispatchers.IO) {
+                val obs = Observation.start(
+                    config.name,
+                    registry
+                )
+                val scope = obs.openScope()
+                try {
+                    withContext(currentCoroutineContext() + registry.asContextElement()) {
+                        logger.info("Started task ${config.name}")
+                        task()
+                        logger.info("Task ${config.name} is completed")
+                    }
+                } catch (e: Exception) {
+                    logger.error("Got error !!!")
+                    obs.error(e)
+                } finally {
+                    scope.close()
+                    obs.stop()
+                }
+            }
+        }, config)
     }
 
     fun stop() {

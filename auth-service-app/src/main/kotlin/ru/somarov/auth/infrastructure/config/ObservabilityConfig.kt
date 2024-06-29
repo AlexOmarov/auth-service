@@ -3,6 +3,7 @@ package ru.somarov.auth.infrastructure.config
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.micrometer.context.ContextRegistry
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
@@ -10,17 +11,22 @@ import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
-import io.micrometer.observation.ObservationHandler.AllMatchingCompositeObservationHandler
+import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.registry.otlp.OtlpConfig
 import io.micrometer.registry.otlp.OtlpMeterRegistry
+import io.micrometer.tracing.contextpropagation.ObservationAwareBaggageThreadLocalAccessor
+import io.micrometer.tracing.contextpropagation.ObservationAwareSpanThreadLocalAccessor
 import io.micrometer.tracing.handler.DefaultTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingReceiverTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingSenderTracingObservationHandler
+import io.micrometer.tracing.handler.TracingAwareMeterObservationHandler
 import io.micrometer.tracing.otel.bridge.EventPublishingContextWrapper
+import io.micrometer.tracing.otel.bridge.OtelBaggageManager
 import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext
 import io.micrometer.tracing.otel.bridge.OtelPropagator
 import io.micrometer.tracing.otel.bridge.OtelTracer
+import io.micrometer.tracing.otel.bridge.Slf4JBaggageEventListener
 import io.micrometer.tracing.otel.bridge.Slf4JEventListener
 import io.opentelemetry.context.ContextStorage
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender
@@ -28,11 +34,11 @@ import io.rsocket.micrometer.observation.ByteBufGetter
 import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
+import reactor.core.publisher.Hooks
 import ru.somarov.auth.infrastructure.kafka.KafkaTracePropagator
-import ru.somarov.auth.infrastructure.otel.ApplicationCallReceiverContext
-import ru.somarov.auth.infrastructure.otel.ApplicationCallSenderContext
 import ru.somarov.auth.infrastructure.otel.createOpenTelemetrySdk
 import ru.somarov.auth.infrastructure.props.AppProps
+import java.util.Collections
 import java.util.Properties
 
 fun setupObservability(application: Application, props: AppProps): Pair<MeterRegistry, ObservationRegistry> {
@@ -56,41 +62,45 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
         meterBinders = listOf(JvmMemoryMetrics(), JvmGcMetrics(), ProcessorMetrics())
     }
 
-    val oteltracer =
-        sdk.getTracer(
-            "ktor_${props.name}",
-            buildProps.getProperty("build.version", "undefined")
-        )
+    val oteltracer = sdk.tracerProvider["io.micrometer.micrometer-tracing"]
+    val context = OtelCurrentTraceContext()
     val listener = Slf4JEventListener()
-    val publisher = { it: Any -> listener.onEvent(it) }
-    val tracer = OtelTracer(oteltracer, OtelCurrentTraceContext(), publisher)
+    val baggageListener = Slf4JBaggageEventListener(Collections.emptyList())
+    val publisher = { it: Any -> listener.onEvent(it); baggageListener.onEvent(it) }
+    val tracer = OtelTracer(
+        oteltracer, OtelCurrentTraceContext(), publisher,
+        OtelBaggageManager(context, Collections.emptyList(), Collections.emptyList())
+    )
     val propagator = OtelPropagator(sdk.propagators, oteltracer)
 
     val observationRegistry = ObservationRegistry.create().also {
         it.observationConfig()
-            .observationHandler(KafkaTracePropagator(tracer, propagator))
             .observationHandler(
-                PropagatingReceiverTracingObservationHandler<ApplicationCallReceiverContext>(tracer, propagator)
+                ObservationHandler.FirstMatchingCompositeObservationHandler(
+                    KafkaTracePropagator(tracer, propagator),
+                    RSocketRequesterTracingObservationHandler(tracer, propagator, ByteBufSetter(), false),
+                    RSocketResponderTracingObservationHandler(tracer, propagator, ByteBufGetter(), false),
+                    PropagatingReceiverTracingObservationHandler(tracer, propagator),
+                    PropagatingSenderTracingObservationHandler(tracer, propagator),
+                    DefaultTracingObservationHandler(tracer)
+                )
             )
             .observationHandler(
-                PropagatingSenderTracingObservationHandler<ApplicationCallSenderContext>(tracer, propagator)
-            )
-            .observationHandler(
-                RSocketRequesterTracingObservationHandler(tracer, propagator, ByteBufSetter(), false)
-            )
-            .observationHandler(
-                RSocketResponderTracingObservationHandler(tracer, propagator, ByteBufGetter(), false)
-            )
-            .observationHandler(
-                AllMatchingCompositeObservationHandler(
-                    DefaultTracingObservationHandler(tracer),
-                    DefaultMeterObservationHandler(meterRegistry)
+                TracingAwareMeterObservationHandler(
+                    DefaultMeterObservationHandler(meterRegistry),
+                    tracer
                 )
             )
     }
 
     ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
     OpenTelemetryAppender.install(sdk)
+
+    ContextRegistry.getInstance().registerThreadLocalAccessor(ObservationAwareSpanThreadLocalAccessor(tracer))
+    ContextRegistry.getInstance()
+        .registerThreadLocalAccessor(ObservationAwareBaggageThreadLocalAccessor(observationRegistry, tracer))
+
+    Hooks.enableAutomaticContextPropagation()
 
     return Pair(meterRegistry, observationRegistry)
 }
