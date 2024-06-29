@@ -9,9 +9,12 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
+import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
+import io.micrometer.observation.ObservationHandler.AllMatchingCompositeObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.registry.otlp.OtlpConfig
 import io.micrometer.registry.otlp.OtlpMeterRegistry
+import io.micrometer.tracing.handler.DefaultTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingReceiverTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingSenderTracingObservationHandler
 import io.micrometer.tracing.otel.bridge.EventPublishingContextWrapper
@@ -35,34 +38,6 @@ import java.util.Properties
 fun setupObservability(application: Application, props: AppProps): Pair<MeterRegistry, ObservationRegistry> {
     val sdk = createOpenTelemetrySdk(props)
     val buildProps = getBuildProperties()
-    val oteltracer =
-        sdk.getTracer(
-            "ktor_${props.name}",
-            buildProps.getProperty("build.version", "undefined")
-        )
-    val listener = Slf4JEventListener()
-    val publisher = { it: Any -> listener.onEvent(it) }
-    val tracer = OtelTracer(oteltracer, OtelCurrentTraceContext(), publisher)
-    val propagator = OtelPropagator(sdk.propagators, oteltracer)
-    val observationRegistry = ObservationRegistry.create().also {
-        it.observationConfig()
-            .observationHandler(KafkaTracePropagator(tracer, propagator))
-            .observationHandler(
-                PropagatingReceiverTracingObservationHandler<ApplicationCallReceiverContext>(tracer, propagator)
-            )
-            .observationHandler(
-                PropagatingSenderTracingObservationHandler<ApplicationCallSenderContext>(tracer, propagator)
-            )
-            .observationHandler(
-                RSocketRequesterTracingObservationHandler(tracer, propagator, ByteBufSetter(), false)
-            )
-            .observationHandler(
-                RSocketResponderTracingObservationHandler(tracer, propagator, ByteBufGetter(), false)
-            )
-    }
-
-    ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
-    OpenTelemetryAppender.install(sdk)
 
     val meterRegistry = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM).also {
         it.config().commonTags(
@@ -80,6 +55,42 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
         registry = meterRegistry
         meterBinders = listOf(JvmMemoryMetrics(), JvmGcMetrics(), ProcessorMetrics())
     }
+
+    val oteltracer =
+        sdk.getTracer(
+            "ktor_${props.name}",
+            buildProps.getProperty("build.version", "undefined")
+        )
+    val listener = Slf4JEventListener()
+    val publisher = { it: Any -> listener.onEvent(it) }
+    val tracer = OtelTracer(oteltracer, OtelCurrentTraceContext(), publisher)
+    val propagator = OtelPropagator(sdk.propagators, oteltracer)
+
+    val observationRegistry = ObservationRegistry.create().also {
+        it.observationConfig()
+            .observationHandler(KafkaTracePropagator(tracer, propagator))
+            .observationHandler(
+                PropagatingReceiverTracingObservationHandler<ApplicationCallReceiverContext>(tracer, propagator)
+            )
+            .observationHandler(
+                PropagatingSenderTracingObservationHandler<ApplicationCallSenderContext>(tracer, propagator)
+            )
+            .observationHandler(
+                RSocketRequesterTracingObservationHandler(tracer, propagator, ByteBufSetter(), false)
+            )
+            .observationHandler(
+                RSocketResponderTracingObservationHandler(tracer, propagator, ByteBufGetter(), false)
+            )
+            .observationHandler(
+                AllMatchingCompositeObservationHandler(
+                    DefaultTracingObservationHandler(tracer),
+                    DefaultMeterObservationHandler(meterRegistry)
+                )
+            )
+    }
+
+    ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
+    OpenTelemetryAppender.install(sdk)
 
     return Pair(meterRegistry, observationRegistry)
 }

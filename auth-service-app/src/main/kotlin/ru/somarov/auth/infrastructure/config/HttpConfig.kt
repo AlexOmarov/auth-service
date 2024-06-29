@@ -10,7 +10,6 @@ import io.ktor.util.logging.KtorSimpleLogger
 import io.micrometer.core.instrument.kotlin.asContextElement
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import ru.somarov.auth.infrastructure.otel.ApplicationCallReceiverContext
@@ -29,7 +28,7 @@ fun setupHttp(application: Application, observationRegistry: ObservationRegistry
         @Suppress("TooGenericExceptionCaught") // had to catch all exception to kog
         try {
             observation.openScope().use {
-                withContext(currentCoroutineContext() + observationRegistry.asContextElement() + Dispatchers.IO) {
+                withContext(currentCoroutineContext() + observationRegistry.asContextElement()) {
                     logger.info(
                         ">>> HTTP ${call.request.origin.method.value} ${call.request.path()} - " +
                             "headers: ${call.request.headers.entries().map { "${it.key}: ${it.value}" }}, " +
@@ -44,6 +43,7 @@ fun setupHttp(application: Application, observationRegistry: ObservationRegistry
             }
         } catch (error: Throwable) {
             logger.error("Got exception while trying to observe http request: ${error.message}", error)
+            observation.stop()
             throw error
         } finally {
             observation.stop()

@@ -1,5 +1,6 @@
 package ru.somarov.auth.infrastructure.rsocket
 
+import io.ktor.util.copy
 import io.ktor.util.logging.KtorSimpleLogger
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.core.readBytes
@@ -13,18 +14,14 @@ import io.rsocket.kotlin.payload.Payload
 import io.rsocket.metadata.CompositeMetadata
 import io.rsocket.metadata.WellKnownMimeType
 import io.rsocket.micrometer.MicrometerRSocketInterceptor
+import io.rsocket.micrometer.observation.ObservationRequesterRSocketProxy
 import io.rsocket.micrometer.observation.ObservationResponderRSocketProxy
 import io.rsocket.util.DefaultPayload
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactor.asFlux
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.flux
 import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
@@ -40,24 +37,16 @@ internal class ServerObservabilityInterceptor(
     override fun intercept(input: RSocket): RSocket {
         val wrapper = getRSocketWrapper(input)
         val measuredRSocket = MicrometerRSocketInterceptor(meterRegistry).apply(wrapper) as io.rsocket.RSocket
-        val proxy = ObservationResponderRSocketProxy(measuredRSocket, observationRegistry)
+        val proxy = ObservationRequesterRSocketProxy(
+            ObservationResponderRSocketProxy(measuredRSocket, observationRegistry),
+            observationRegistry
+        )
 
         return object : RSocket {
             override val coroutineContext: CoroutineContext
                 get() = input.coroutineContext
 
-            override suspend fun fireAndForget(payload: Payload) {
-                proxy.fireAndForget(DefaultPayload.create(payload.data.readBytes(), payload.metadata?.readBytes()))
-            }
-
             override suspend fun requestResponse(payload: Payload): Payload {
-
-                val deserializedRequest = getDeserializedPayload(payload)
-                logger.info(
-                    "Incoming rsocket request -> ${deserializedRequest.third}: " +
-                        "payload: ${deserializedRequest.first}, metadata: ${deserializedRequest.second}"
-                )
-
                 val result = proxy.requestResponse(
                     DefaultPayload.create(
                         payload.data.readBytes(),
@@ -69,79 +58,48 @@ internal class ServerObservabilityInterceptor(
                     ByteReadChannel(result.data).readRemaining(),
                     ByteReadChannel(result.metadata).readRemaining()
                 )
-
-                val deserializedResponse = getDeserializedPayload(response)
-                logger.info(
-                    "Outgoing rsocket response <- ${deserializedRequest.third}: " +
-                        "payload: ${deserializedResponse.first}, " +
-                        "request metadata: ${deserializedRequest.second}, " +
-                        "response metadata: ${deserializedResponse.second}"
-                )
                 return response
-            }
-
-            override fun requestStream(payload: Payload): Flow<Payload> {
-                return proxy.requestStream(
-                    DefaultPayload.create(
-                        payload.data.readBytes(),
-                        payload.metadata?.readBytes()
-                    )
-                ).asFlow().map {
-                    Payload(
-                        ByteReadChannel(it.data).readRemaining(),
-                        ByteReadChannel(it.metadata).readRemaining()
-                    )
-                }
             }
         }
     }
 
     private fun getRSocketWrapper(input: RSocket): io.rsocket.RSocket {
         return object : io.rsocket.RSocket {
-            @Suppress("kotlin:S6508") // Reactor java Void type
-            override fun fireAndForget(payload: io.rsocket.Payload): Mono<Void> {
-                return mono(input.coroutineContext) {
-                    input.fireAndForget(
-                        Payload(
-                            ByteReadChannel(payload.data).readRemaining(),
-                            ByteReadChannel(payload.metadata).readRemaining()
-                        )
-                    )
-                    return@mono null
-                }
-            }
-
             override fun requestResponse(payload: io.rsocket.Payload): Mono<io.rsocket.Payload> {
-                return mono(input.coroutineContext) {
+                val context = (Dispatchers.IO + input.coroutineContext).minusKey(Job().key)
+                return mono(context) {
+                    val deserializedRequest = getDeserializedPayload(payload)
+                    logger.info(
+                        "Incoming rsocket request -> ${deserializedRequest.third}: " +
+                            "payload: ${deserializedRequest.first}, metadata: ${deserializedRequest.second}"
+                    )
+
                     val result = input.requestResponse(
                         Payload(
                             ByteReadChannel(payload.data).readRemaining(),
                             ByteReadChannel(payload.metadata).readRemaining()
                         )
                     )
-                    return@mono DefaultPayload.create(result.data.readBytes(), result.metadata?.readBytes())
-                }
-            }
+                    val response = DefaultPayload.create(result.data.readBytes(), result.metadata?.readBytes())
 
-            override fun requestStream(payload: io.rsocket.Payload): Flux<io.rsocket.Payload> {
-                return flux(input.coroutineContext) {
-                    input.requestStream(
-                        Payload(
-                            ByteReadChannel(payload.data).readRemaining(),
-                            ByteReadChannel(payload.metadata).readRemaining()
-                        )
+                    val deserializedResponse = getDeserializedPayload(response)
+                    logger.info(
+                        "Outgoing rsocket response <- ${deserializedRequest.third}: " +
+                            "payload: ${deserializedResponse.first}, " +
+                            "request metadata: ${deserializedRequest.second}, " +
+                            "response metadata: ${deserializedResponse.second}"
                     )
-                        .asFlux()
-                }
+                    return@mono response
+                }.contextCapture()
             }
         }
     }
 
-    private fun getDeserializedPayload(payload: Payload): Triple<Any, List<String>, String> {
+    private fun getDeserializedPayload(payload: io.rsocket.Payload): Triple<Any, List<String>, String> {
         val data = try {
-            val array = payload.data.copy().readBytes()
+            val array = payload.data.copy().array()
             if (array.isNotEmpty()) {
-                Json.decodeFromString<String>(String(array))
+                String(array)
             } else {
                 "Body is null"
             }
@@ -150,18 +108,16 @@ internal class ServerObservabilityInterceptor(
             "Body is null"
         }
         var routing = "null"
-        val metadata = payload.metadata?.copy()?.let {
-            CompositeMetadata(Unpooled.wrappedBuffer(it.readBytes()), false)
-                .map { met ->
-                    val content = if (isText(met.content, encoding)) met.content.toString(encoding) else "Not text"
-                    if (met.mimeType == WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string) {
-                        routing = if (content.isNotEmpty()) content.substring(1) else content
-                        "Header(mime: ${met.mimeType}, content: $routing)"
-                    } else {
-                        "Header(mime: ${met.mimeType}, content: $content)"
-                    }
+        val metadata = CompositeMetadata(Unpooled.wrappedBuffer(payload.metadata.copy().array()), false)
+            .map { met ->
+                val content = if (isText(met.content, encoding)) met.content.toString(encoding) else "Not text"
+                if (met.mimeType == WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string) {
+                    routing = if (content.isNotEmpty()) content.substring(1) else content
+                    "Header(mime: ${met.mimeType}, content: $routing)"
+                } else {
+                    "Header(mime: ${met.mimeType}, content: $content)"
                 }
-        } ?: listOf()
+            }
 
         return Triple(data, metadata, routing)
     }

@@ -3,7 +3,9 @@ package ru.somarov.auth.infrastructure.kafka
 import io.micrometer.core.instrument.kotlin.asContextElement
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactor.mono
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -22,7 +24,6 @@ import reactor.util.retry.Retry
 import ru.somarov.auth.presentation.event.Metadata
 import java.time.Duration
 import java.util.UUID
-import java.util.function.Supplier
 
 abstract class Consumer<T : Any>(
     private val registry: ObservationRegistry,
@@ -83,29 +84,32 @@ abstract class Consumer<T : Any>(
             }
     }
 
+    @Suppress("TooGenericExceptionCaught") // Had to catch any exceptions to continue consuming
     private fun handleRecord(record: ConsumerRecord<String, T?>): Mono<Result> {
-        val observation = Observation.createNotStarted(
-            "kafka_observation",
-            { KafkaRecordReceiverContext(record, props.name, id.toString()) },
-            registry
-        )
-
-        val result: Mono<Result>? = observation.observe(Supplier {
-            if (record.value() == null) {
-                log.warn("Got empty value for record $record")
-                // Would be great to send messages which cannot be serialized to dlq here
-                Mono.just(Result(Result.Code.FAILED))
-            } else {
-                mono(registry.asContextElement()) {
+        val result = mono(Dispatchers.IO) {
+            val observation = Observation.start(
+                "kafka_observation",
+                { KafkaRecordReceiverContext(record, props.name, id.toString()) },
+                registry
+            )
+            val scope = observation.openScope()
+            try {
+                withContext(registry.asContextElement()) {
                     handle(
                         record.value()!!,
                         Metadata(Clock.System.now(), record.key(), 0)
                     )
                 }
+            } catch (e: Throwable) {
+                log.error("Got error while processing kafka record: $record, exception: ${e.message}", e)
+                throw e
+            } finally {
+                scope.close()
+                observation.stop()
             }
-        })
+        }
 
-        return result!!
+        return result
     }
 
     @Suppress("TooGenericExceptionCaught") // Should be able to process every exception

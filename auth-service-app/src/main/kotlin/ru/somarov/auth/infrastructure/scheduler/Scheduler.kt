@@ -1,6 +1,8 @@
 package ru.somarov.auth.infrastructure.scheduler
 
 import io.ktor.util.logging.KtorSimpleLogger
+import io.micrometer.core.instrument.kotlin.asContextElement
+import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import io.r2dbc.spi.ConnectionFactory
 import kotlinx.coroutines.CompletableDeferred
@@ -14,6 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
@@ -36,15 +39,21 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
                     val startTime = System.currentTimeMillis()
                     @Suppress("TooGenericExceptionCaught") // have to catch all exceptions to complete deferred
                     executor.executeWithLock(Runnable {
-                        launch {
-                            try {
-                                logger.info("Started task ${config.name}")
-                                task()
-                                deferred.complete(Unit)
-                                logger.info("Task ${config.name} is completed")
-                            } catch (e: Exception) {
-                                logger.error("Got error when trying to execute scheduled task $config", e)
-                                deferred.complete(Unit)
+                        scope.launch {
+                            val obs = Observation.start(config.name, registry)
+                            val scope = obs.openScope()
+                            withContext(registry.asContextElement()) {
+                                try {
+                                    logger.info("Started task ${config.name}")
+                                    task()
+                                    logger.info("Task ${config.name} is completed")
+                                } catch (e: Exception) {
+                                    logger.error("Got error when trying to execute scheduled task $config", e)
+                                } finally {
+                                    scope.close()
+                                    obs.stop()
+                                    deferred.complete(Unit)
+                                }
                             }
                         }
                     }, config)
