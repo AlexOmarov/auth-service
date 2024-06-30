@@ -13,10 +13,10 @@ class Service(
     private val logger = KtorSimpleLogger(this.javaClass.name)
 
     suspend fun makeWork(message: String = "default"): AuthorizationResponse {
-        val clients = clientRepo.findAll()
+        /*val clients = clientRepo.findAll()
         val revokedAuthorizations = revokedAuthorizationRepo.findAll()
-        clients.forEach { logger.info("Hi, ${it.email}") }
-        logger.info("Revoked, $revokedAuthorizations")
+        clients.forEach { logger.info("Hi, ${it.email}") }*/
+        /*logger.info("Revoked, $revokedAuthorizations")*/
         logger.info("GOT MSG $message")
         return AuthorizationResponse(Authorization("111", "123"))
     }

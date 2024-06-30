@@ -1,10 +1,7 @@
 package ru.somarov.auth.infrastructure.kafka
 
-import io.micrometer.core.instrument.kotlin.asContextElement
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.reactor.mono
 import kotlinx.datetime.Clock
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -20,10 +17,10 @@ import reactor.kafka.receiver.KafkaReceiver
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kafka.receiver.observation.KafkaRecordReceiverContext
 import reactor.util.retry.Retry
+import ru.somarov.auth.infrastructure.micrometer.observeSuspendedMono
 import ru.somarov.auth.presentation.event.Metadata
 import java.time.Duration
 import java.util.UUID
-import java.util.function.Supplier
 
 abstract class Consumer<T : Any>(
     private val registry: ObservationRegistry,
@@ -34,7 +31,7 @@ abstract class Consumer<T : Any>(
 
     private val id = UUID.randomUUID()
 
-    private lateinit var disposable: Disposable
+    private var disposable: Disposable? = null
 
     fun start() {
         log.info("Starting ${props.name} consumer")
@@ -54,7 +51,7 @@ abstract class Consumer<T : Any>(
     }
 
     fun stop() {
-        disposable.dispose()
+        disposable?.dispose()
         log.info("Stopped ${props.name} consumer")
     }
 
@@ -86,21 +83,16 @@ abstract class Consumer<T : Any>(
 
     @Suppress("TooGenericExceptionCaught") // Had to catch any exceptions to continue consuming
     private fun handleRecord(record: ConsumerRecord<String, T?>): Mono<Result> {
-        val observation = Observation.createNotStarted(
+        return Observation.createNotStarted(
             "kafka_observation",
             { KafkaRecordReceiverContext(record, props.name, id.toString()) },
             registry
-        )
-        val result = observation.observe(Supplier {
-            mono(Dispatchers.IO + registry.asContextElement()) {
-                handle(
-                    record.value()!!,
-                    Metadata(Clock.System.now(), record.key(), 0)
-                )
-            }
-        })!!
-
-        return result
+        ).observeSuspendedMono {
+            handle(
+                record.value()!!,
+                Metadata(Clock.System.now(), record.key(), 0)
+            )
+        }
     }
 
     @Suppress("TooGenericExceptionCaught") // Should be able to process every exception

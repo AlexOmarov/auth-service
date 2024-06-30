@@ -5,7 +5,6 @@ import io.ktor.util.logging.KtorSimpleLogger
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.core.readBytes
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import io.netty.buffer.ByteBufUtil.isText
 import io.netty.buffer.Unpooled
@@ -15,7 +14,6 @@ import io.rsocket.kotlin.payload.Payload
 import io.rsocket.metadata.CompositeMetadata
 import io.rsocket.metadata.WellKnownMimeType
 import io.rsocket.micrometer.MicrometerRSocketInterceptor
-import io.rsocket.micrometer.observation.ObservationRequesterRSocketProxy
 import io.rsocket.micrometer.observation.ObservationResponderRSocketProxy
 import io.rsocket.util.DefaultPayload
 import kotlinx.coroutines.Dispatchers

@@ -3,7 +3,6 @@ package ru.somarov.auth.infrastructure.config
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.metrics.micrometer.MicrometerMetrics
-import io.micrometer.context.ContextRegistry
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
@@ -15,8 +14,6 @@ import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.registry.otlp.OtlpConfig
 import io.micrometer.registry.otlp.OtlpMeterRegistry
-import io.micrometer.tracing.contextpropagation.ObservationAwareBaggageThreadLocalAccessor
-import io.micrometer.tracing.contextpropagation.ObservationAwareSpanThreadLocalAccessor
 import io.micrometer.tracing.handler.DefaultTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingReceiverTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingSenderTracingObservationHandler
@@ -34,7 +31,6 @@ import io.rsocket.micrometer.observation.ByteBufGetter
 import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
-import reactor.core.publisher.Hooks
 import ru.somarov.auth.infrastructure.kafka.KafkaTracePropagator
 import ru.somarov.auth.infrastructure.otel.createOpenTelemetrySdk
 import ru.somarov.auth.infrastructure.props.AppProps
@@ -96,11 +92,11 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
     ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
     OpenTelemetryAppender.install(sdk)
 
-    ContextRegistry.getInstance().registerThreadLocalAccessor(ObservationAwareSpanThreadLocalAccessor(tracer))
-    ContextRegistry.getInstance()
-        .registerThreadLocalAccessor(ObservationAwareBaggageThreadLocalAccessor(observationRegistry, tracer))
+    /*    ContextRegistry.getInstance().registerThreadLocalAccessor(ObservationAwareSpanThreadLocalAccessor(tracer))
+        ContextRegistry.getInstance()
+            .registerThreadLocalAccessor(ObservationAwareBaggageThreadLocalAccessor(observationRegistry, tracer))
 
-    Hooks.enableAutomaticContextPropagation()
+        Hooks.enableAutomaticContextPropagation()*/
 
     return Pair(meterRegistry, observationRegistry)
 }
