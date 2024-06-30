@@ -68,7 +68,7 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
     val baggageListener = Slf4JBaggageEventListener(Collections.emptyList())
     val publisher = { it: Any -> listener.onEvent(it); baggageListener.onEvent(it) }
     val tracer = OtelTracer(
-        oteltracer, OtelCurrentTraceContext(), publisher,
+        oteltracer, context, publisher,
         OtelBaggageManager(context, Collections.emptyList(), Collections.emptyList())
     )
     val propagator = OtelPropagator(sdk.propagators, oteltracer)

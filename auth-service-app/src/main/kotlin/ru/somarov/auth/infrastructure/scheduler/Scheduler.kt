@@ -15,11 +15,16 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
+import java.time.OffsetDateTime
+import java.util.UUID
+import java.util.function.Supplier
 
 class Scheduler(factory: ConnectionFactory, private val registry: ObservationRegistry) {
     private val logger = KtorSimpleLogger(this.javaClass.name)
@@ -46,28 +51,19 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
 
     private suspend fun schedule(task: suspend () -> Unit, config: LockConfiguration) {
         @Suppress("TooGenericExceptionCaught") // have to catch all exceptions to complete deferred
-        executor.executeWithLock(Runnable {
-            runBlocking(Dispatchers.IO) {
-                val obs = Observation.start(
-                    config.name,
-                    registry
-                )
-                val scope = obs.openScope()
-                try {
-                    withContext(currentCoroutineContext() + registry.asContextElement()) {
-                        logger.info("Started task ${config.name}")
-                        task()
-                        logger.info("Task ${config.name} is completed")
-                    }
-                } catch (e: Exception) {
-                    logger.error("Got error !!!")
-                    obs.error(e)
-                } finally {
-                    scope.close()
-                    obs.stop()
-                }
+        val obs = Observation.createNotStarted(
+            config.name,
+            registry
+        )
+        obs.start()
+        obs.openScope().use {
+            withContext(currentCoroutineContext() + registry.asContextElement()) {
+                logger.info("Started task ${config.name}")
+                task()
+                logger.info("Task ${config.name} is completed")
             }
-        }, config)
+        }
+        obs.stop()
     }
 
     fun stop() {

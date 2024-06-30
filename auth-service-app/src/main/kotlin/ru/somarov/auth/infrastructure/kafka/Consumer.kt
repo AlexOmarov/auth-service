@@ -5,7 +5,6 @@ import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactor.mono
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -24,6 +23,7 @@ import reactor.util.retry.Retry
 import ru.somarov.auth.presentation.event.Metadata
 import java.time.Duration
 import java.util.UUID
+import java.util.function.Supplier
 
 abstract class Consumer<T : Any>(
     private val registry: ObservationRegistry,
@@ -86,29 +86,19 @@ abstract class Consumer<T : Any>(
 
     @Suppress("TooGenericExceptionCaught") // Had to catch any exceptions to continue consuming
     private fun handleRecord(record: ConsumerRecord<String, T?>): Mono<Result> {
-        val result = mono(Dispatchers.IO) {
-            val observation = Observation.start(
-                "kafka_observation",
-                { KafkaRecordReceiverContext(record, props.name, id.toString()) },
-                registry
-            )
-            try {
-                observation.openScope().use {
-                    withContext(registry.asContextElement()) {
-                        handle(
-                            record.value()!!,
-                            Metadata(Clock.System.now(), record.key(), 0)
-                        )
-                    }
-                }
-            } catch (e: Throwable) {
-                log.error("Got error while processing kafka record: $record, exception: ${e.message}", e)
-                observation.error(e)
-                throw e
-            } finally {
-                observation.stop()
+        val observation = Observation.createNotStarted(
+            "kafka_observation",
+            { KafkaRecordReceiverContext(record, props.name, id.toString()) },
+            registry
+        )
+        val result = observation.observe(Supplier {
+            mono(Dispatchers.IO + registry.asContextElement()) {
+                handle(
+                    record.value()!!,
+                    Metadata(Clock.System.now(), record.key(), 0)
+                )
             }
-        }
+        })!!
 
         return result
     }

@@ -16,10 +16,10 @@ internal fun Routing.authSocket(service: Service) {
     rSocket("login") {
         RSocketRequestHandler {
             requestResponse { request: Payload ->
-                val request = Json.Default.decodeFromString<AuthorizationRequest>(request.data.readText())
+                val req = Json.Default.decodeFromString<AuthorizationRequest>(request.data.readText())
                 buildPayload {
                     data {
-                        writeText(Json.Default.encodeToString(service.makeWork(request.userId.toString())))
+                        writeText(Json.Default.encodeToString(service.makeWork(req.userId.toString())))
                     }
                 }
             }

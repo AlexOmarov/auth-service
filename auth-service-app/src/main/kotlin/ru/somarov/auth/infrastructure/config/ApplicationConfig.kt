@@ -3,10 +3,10 @@ package ru.somarov.auth.infrastructure.config
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationStarted
 import io.ktor.server.application.ApplicationStopped
+import io.ktor.server.application.ServerReady
 import io.ktor.server.plugins.openapi.openAPI
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.routing.routing
-import ru.somarov.auth.application.service.SchedulerService
 import ru.somarov.auth.application.service.Service
 import ru.somarov.auth.infrastructure.db.DatabaseClient
 import ru.somarov.auth.infrastructure.db.repo.ClientRepo
@@ -30,16 +30,14 @@ internal fun Application.config() {
     val repo = ClientRepo(dbClient)
     val revokedAuthorizationRepo = RevokedAuthorizationRepo(dbClient)
     val service = Service(repo, revokedAuthorizationRepo)
-    val schedulerService = SchedulerService(repo)
 
     val scheduler = Scheduler(dbClient.factory, observationRegistry)
     val consumer = MailConsumer(service, props.kafka, observationRegistry)
     val retryConsumer = RetryConsumer(props.kafka, listOf(consumer), observationRegistry)
 
     setupPipeline(this)
-    setupHttp(this, observationRegistry)
     setupRsocket(this, meterRegistry, observationRegistry)
-    registerTasks(scheduler, schedulerService)
+    registerTasks(scheduler)
 
     routing {
         openAPI("openapi")
@@ -48,7 +46,7 @@ internal fun Application.config() {
         authSocket(service)
     }
 
-    environment.monitor.subscribe(ApplicationStarted) {
+    environment.monitor.subscribe(ServerReady) {
         consumer.start()
         scheduler.start()
         retryConsumer.start()

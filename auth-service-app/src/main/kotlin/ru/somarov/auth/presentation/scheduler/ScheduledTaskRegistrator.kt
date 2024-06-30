@@ -13,14 +13,13 @@ import io.rsocket.kotlin.payload.data
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.javacrumbs.shedlock.core.LockConfiguration
-import ru.somarov.auth.application.service.SchedulerService
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import ru.somarov.auth.presentation.request.AuthorizationRequest
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-fun registerTasks(scheduler: Scheduler, service: SchedulerService) {
+fun registerTasks(scheduler: Scheduler) {
     val ktorClient = HttpClient(CIO) {
         install(WebSockets)
         install(RSocketSupport) {
@@ -38,21 +37,12 @@ fun registerTasks(scheduler: Scheduler, service: SchedulerService) {
     scheduler.schedule(
         LockConfiguration(
             Instant.now(),
-            "FIRST_TASK",
-            Duration.parse("PT1M"),
-            Duration.parse("PT1S"),
-        )
-    ) { service.makeWorkInScheduler() }
-
-    scheduler.schedule(
-        LockConfiguration(
-            Instant.now(),
             "SECOND_TASK",
             Duration.parse("PT1M"),
             Duration.parse("PT1S"),
         )
     ) {
-        println("!!!!!" + String(ktorClient.rSocket(path = "login", port = 9099).requestResponse(
+        println(String(ktorClient.rSocket(path = "login", port = 9099).requestResponse(
             buildPayload {
                 data(Json.Default.encodeToString(AuthorizationRequest(UUID.randomUUID())))
             }
