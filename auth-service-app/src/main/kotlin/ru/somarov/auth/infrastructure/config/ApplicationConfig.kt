@@ -68,7 +68,7 @@ internal fun Application.config() {
                 }
             }.rSocket(path = "login", port = 9099)
         }
-        registerTasks(scheduler, client)
+        registerTasks(scheduler, client, observationRegistry)
         scheduler.start()
     }
 
