@@ -2,7 +2,7 @@
 
 rootProject.name = "auth-service"
 
-include("auth-service-app", "auth-service-api")
+include("auth-service-app")
 
 dependencyResolutionManagement {
     repositories {

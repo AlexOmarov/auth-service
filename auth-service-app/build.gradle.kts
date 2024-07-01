@@ -13,7 +13,6 @@ detekt {
 }
 
 dependencies {
-    implementation(project(":auth-service-api"))
 
     detektPlugins(libs.detekt.ktlint)
 

@@ -15,12 +15,11 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 sonar {
     val exclusions = project.properties["test_exclusions"].toString()
     val appBuildDirectory = project(":auth-service-app").layout.buildDirectory.get().asFile
-    val apiBuildDirectory = project(":auth-service-api").layout.buildDirectory.get().asFile
 
     properties {
         property(
             "sonar.kotlin.detekt.reportPaths",
-            "$appBuildDirectory/reports/detekt/detekt.xml, $apiBuildDirectory/reports/detekt/detekt.xml"
+            "$appBuildDirectory/reports/detekt/detekt.xml"
         )
         property("sonar.qualitygate.wait", "true")
         property("sonar.core.codeCoveragePlugin", "jacoco")

@@ -1,4 +1,4 @@
-package ru.somarov.auth.serialization
+package ru.somarov.auth.infrastructure
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
