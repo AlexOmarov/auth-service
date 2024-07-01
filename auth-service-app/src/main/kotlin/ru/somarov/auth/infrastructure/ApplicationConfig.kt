@@ -37,20 +37,22 @@ internal fun Application.config() {
         val logger = KtorSimpleLogger("TEST")
 
         launch {
-            val client = HttpClient(CIO) {
-                install(WebSockets)
-                install(RSocketSupport)
-            }.rSocket(path = "login", port = 9099)
             while (true) {
+                val client = HttpClient(CIO) {
+                    install(WebSockets)
+                    install(RSocketSupport)
+                }
+                val rcks = client.rSocket(path = "login", port = 9099)
                 try {
-                    Observation.createNotStarted("TEST", observationRegistry).observeSus {
+                    Observation.createNotStarted("TEST", observationRegistry).observeAndAwait {
                         logger.info("Started task TEST")
-                        client.requestResponse(buildPayload { data("WOW") })
+                        rcks.requestResponse(buildPayload { data("WOW") })
                         logger.info("Task TEST is completed")
                     }
                 } catch (e: Exception) {
                     logger.error("Got ex ${e.message}", e)
                 }
+                client.close()
                 println("ITS OVER")
                 delay(1000)
             }
@@ -59,17 +61,14 @@ internal fun Application.config() {
 }
 
 @Suppress("TooGenericExceptionCaught")
-suspend fun <T> Observation.observeSus(func: suspend () -> T) {
+suspend fun <T> Observation.observeAndAwait(func: suspend () -> T) {
     start()
     try {
-        openScope().use {
-            withContext(currentCoroutineContext() + this.observationRegistry.asContextElement()) {
-                func()
-            }
+        withContext(openScope().use { observationRegistry.asContextElement() }) {
+            func()
         }
     } catch (error: Throwable) {
         error(error)
-        stop()
         throw error
     } finally {
         stop()

@@ -34,7 +34,7 @@
     </appender>
     <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender"/>
 
-    <root level="${LOG_LEVEL:-debug}">
+    <root level="${LOG_LEVEL:-info}">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="OTEL"/>
     </root>

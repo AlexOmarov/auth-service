@@ -71,10 +71,7 @@ fun setupObservability(application: Application): Pair<MeterRegistry, Observatio
     val listener = Slf4JEventListener()
     val baggageListener = Slf4JBaggageEventListener(Collections.emptyList())
     val publisher = { it: Any -> listener.onEvent(it); baggageListener.onEvent(it) }
-    val tracer = OtelTracer(
-        oteltracer, context, publisher,
-        OtelBaggageManager(context, Collections.emptyList(), Collections.emptyList())
-    )
+    val tracer = OtelTracer(oteltracer, context, publisher)
     val propagator = OtelPropagator(sdk.propagators, oteltracer)
 
     val observationRegistry = ObservationRegistry.create().also {
@@ -92,7 +89,7 @@ fun setupObservability(application: Application): Pair<MeterRegistry, Observatio
     }
 
     ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
-    OpenTelemetryAppender.install(sdk)
+    // OpenTelemetryAppender.install(sdk)
 
     return Pair(meterRegistry, observationRegistry)
 }

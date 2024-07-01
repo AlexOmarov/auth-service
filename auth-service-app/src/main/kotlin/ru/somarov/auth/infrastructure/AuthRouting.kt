@@ -13,13 +13,15 @@ import kotlinx.serialization.json.Json
 import java.util.UUID
 
 internal fun Routing.authSocket() {
-    val handler = RSocketRequestHandler { requestResponse {
-        KtorSimpleLogger("WOPW").info("!!!!!!!!!!!!!!!")
-        respond()
-    } }
+    val handler = RSocketRequestHandler {
+        requestResponse {
+            KtorSimpleLogger("WOPW").info("!!!!!!!!!!!!!!!")
+            respond()
+        }
+    }
     rSocket("login") { handler }
 }
 
 private fun respond(): Payload {
-    return buildPayload { data { writeText(Json.Default.encodeToString(AuthorizationRequest(UUID.randomUUID()))) } }
+    return buildPayload { data { writeText(Json.Default.encodeToString(AuthorizationRequest("RESULT"))) } }
 }
