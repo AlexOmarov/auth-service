@@ -43,8 +43,10 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
                 val startTime = System.currentTimeMillis()
 
                 val deferred = CompletableDeferred<Unit>()
+                var isExecuting = false
                 @Suppress("TooGenericExceptionCaught") // have to catch all exceptions to complete deferred
                 executor.executeWithLock(kotlinx.coroutines.Runnable {
+                    isExecuting = true
                     runBlocking(Dispatchers.IO) {
                         try {
                             execute(task, config)
@@ -54,7 +56,9 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
                         deferred.complete(Unit)
                     }
                 }, config)
-                deferred.await()
+                if(isExecuting) {
+                    deferred.await()
+                }
                 val endTime = System.currentTimeMillis()
                 delay(maxOf(0, config.lockAtLeastFor.toMillis() - endTime + startTime))
             }

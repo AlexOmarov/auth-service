@@ -6,9 +6,9 @@ import io.rsocket.kotlin.ExperimentalMetadataApi
 import io.rsocket.kotlin.RSocket
 import io.rsocket.kotlin.metadata.RoutingMetadata
 import io.rsocket.kotlin.metadata.buildCompositeMetadata
+import io.rsocket.kotlin.metadata.metadata
 import io.rsocket.kotlin.payload.buildPayload
 import io.rsocket.kotlin.payload.data
-import io.rsocket.kotlin.payload.metadata
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.javacrumbs.shedlock.core.LockConfiguration
@@ -32,7 +32,7 @@ fun registerTasks(scheduler: Scheduler, client: RSocket) {
             data(Json.Default.encodeToString(AuthorizationRequest(UUID.randomUUID())))
             metadata(buildCompositeMetadata {
                 add(RoutingMetadata("login"))
-            }.toString())
+            })
         }
         val response = client.requestResponse(request)
         val result = String(response.data.readBytes())
