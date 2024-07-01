@@ -43,10 +43,10 @@ internal class ServerObservabilityInterceptor(
                 get() = input.coroutineContext
 
             override suspend fun requestResponse(payload: Payload): Payload {
+
                 val result = proxy.requestResponse(
                     DefaultPayload.create(
-                        payload.data.readBytes(),
-                        payload.metadata?.readBytes()
+                        payload.data.readBytes()
                     )
                 ).awaitSingle()
 
