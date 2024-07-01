@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.otel
+package ru.somarov.auth.infrastructure.config
 
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes

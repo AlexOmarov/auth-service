@@ -32,7 +32,6 @@ import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
 import ru.somarov.auth.infrastructure.kafka.KafkaTracePropagator
-import ru.somarov.auth.infrastructure.otel.createOpenTelemetrySdk
 import ru.somarov.auth.infrastructure.props.AppProps
 import java.util.Collections
 import java.util.Properties
@@ -91,12 +90,6 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
 
     ContextStorage.addWrapper(EventPublishingContextWrapper(publisher))
     OpenTelemetryAppender.install(sdk)
-
-    /*    ContextRegistry.getInstance().registerThreadLocalAccessor(ObservationAwareSpanThreadLocalAccessor(tracer))
-        ContextRegistry.getInstance()
-            .registerThreadLocalAccessor(ObservationAwareBaggageThreadLocalAccessor(observationRegistry, tracer))
-
-        Hooks.enableAutomaticContextPropagation()*/
 
     return Pair(meterRegistry, observationRegistry)
 }

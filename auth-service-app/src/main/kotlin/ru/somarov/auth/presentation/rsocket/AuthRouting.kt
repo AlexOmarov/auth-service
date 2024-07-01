@@ -13,16 +13,12 @@ import ru.somarov.auth.application.service.Service
 import ru.somarov.auth.presentation.request.AuthorizationRequest
 
 internal fun Routing.authSocket(service: Service) {
-    rSocket("login") {
-        RSocketRequestHandler {
-            requestResponse { request: Payload ->
-                val req = Json.Default.decodeFromString<AuthorizationRequest>(request.data.readText())
-                buildPayload {
-                    data {
-                        writeText(Json.Default.encodeToString(service.makeWork(req.userId.toString())))
-                    }
-                }
-            }
-        }
-    }
+    val handler = RSocketRequestHandler { requestResponse { respond(it, service) } }
+    rSocket("login") { handler }
+}
+
+private suspend fun respond(payload: Payload, service: Service): Payload {
+    val req = Json.Default.decodeFromString<AuthorizationRequest>(payload.data.readText())
+    val result = service.makeWork(req.userId.toString())
+    return buildPayload { data { writeText(Json.Default.encodeToString(result)) } }
 }

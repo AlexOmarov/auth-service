@@ -3,7 +3,7 @@ application:
   instance: "$HOSTNAME:undefined"
   db:
     host: "$DB_HOST:localhost"
-    port: "$DB_PORT:5432"
+    port: "$DB_PORT:7099"
     name: "$DB_NAME:auth_service"
     schema: "$DB_SCHEMA:auth_service"
     user: "$DB_USER:auth_service"

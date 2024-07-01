@@ -38,7 +38,7 @@ internal fun Application.config() {
     val revokedAuthorizationRepo = RevokedAuthorizationRepo(dbClient)
     val service = Service(repo, revokedAuthorizationRepo)
 
-    val scheduler = Scheduler(observationRegistry)
+    val scheduler = Scheduler(dbClient.factory, observationRegistry)
     val consumer = MailConsumer(service, props.kafka, observationRegistry)
     val retryConsumer = RetryConsumer(props.kafka, listOf(consumer), observationRegistry)
 
