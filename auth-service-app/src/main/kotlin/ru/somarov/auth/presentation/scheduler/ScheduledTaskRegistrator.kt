@@ -27,12 +27,12 @@ import io.rsocket.util.DefaultPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.javacrumbs.shedlock.core.LockConfiguration
 import reactor.core.publisher.Mono
+import ru.somarov.auth.infrastructure.micrometer.observeSuspendedMono
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import ru.somarov.auth.presentation.request.AuthorizationRequest
 import java.nio.charset.Charset
@@ -66,12 +66,15 @@ fun registerTasks(scheduler: Scheduler, client: RSocket, observationRegistry: Ob
                 Unpooled.wrappedBuffer(it.content.readBytes())
             )
         }
-        val res = ObservationRequesterRSocketProxy(getRSocketWrapper(client), observationRegistry).requestResponse(
+        val res = ObservationRequesterRSocketProxy(
+            getRSocketWrapper(client, observationRegistry),
+            observationRegistry
+        ).requestResponse(
             DefaultPayload.create(
                 Unpooled.wrappedBuffer(request.data.readBytes()),
                 metadata
             )
-        ).awaitSingle()
+        ).contextCapture().awaitSingle()
         val response = Payload(
             ByteReadChannel(res.data).readRemaining(),
             ByteReadChannel(res.metadata).readRemaining()
@@ -81,12 +84,13 @@ fun registerTasks(scheduler: Scheduler, client: RSocket, observationRegistry: Ob
     }
 }
 
-private fun getRSocketWrapper(input: RSocket): io.rsocket.RSocket {
+private fun getRSocketWrapper(input: RSocket, observationRegistry: ObservationRegistry): io.rsocket.RSocket {
     val logger = KtorSimpleLogger("WOW")
     return object : io.rsocket.RSocket {
         override fun requestResponse(payload: io.rsocket.Payload): Mono<io.rsocket.Payload> {
             val context = (Dispatchers.IO + input.coroutineContext).minusKey(Job().key)
-            return mono(context) {
+            val observation = observationRegistry.currentObservation!!
+            return observation.observeSuspendedMono(coroutineContext = context) {
                 val deserializedRequest = getDeserializedPayload(payload)
                 logger.info(
                     "Outgoing rsocket request <- ${deserializedRequest.third}: " +
@@ -108,7 +112,7 @@ private fun getRSocketWrapper(input: RSocket): io.rsocket.RSocket {
                         "request metadata: ${deserializedRequest.second}, " +
                         "response metadata: ${deserializedResponse.second}"
                 )
-                return@mono response
+                return@observeSuspendedMono response
             }.contextCapture()
         }
     }

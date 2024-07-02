@@ -25,9 +25,9 @@ import io.rsocket.util.DefaultPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.mono
 import kotlinx.serialization.SerializationException
 import reactor.core.publisher.Mono
+import ru.somarov.auth.infrastructure.micrometer.observeSuspendedMono
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
 
@@ -41,7 +41,7 @@ internal class ServerObservabilityInterceptor(
 
     @OptIn(ExperimentalMetadataApi::class)
     override fun intercept(input: RSocket): RSocket {
-        val wrapper = getRSocketWrapper(input)
+        val wrapper = getRSocketWrapper(input, observationRegistry)
         val measuredRSocket = MicrometerRSocketInterceptor(meterRegistry).apply(wrapper) as io.rsocket.RSocket
         val proxy = ObservationResponderRSocketProxy(measuredRSocket, observationRegistry)
 
@@ -59,12 +59,12 @@ internal class ServerObservabilityInterceptor(
                         Unpooled.wrappedBuffer(it.content.readBytes())
                     )
                 }
-                val result = proxy.requestResponse(
-                    DefaultPayload.create(
-                        Unpooled.wrappedBuffer(payload.data.readBytes()),
-                        metadata
-                    )
-                ).awaitSingle()
+                val defPayload = DefaultPayload.create(
+                    Unpooled.wrappedBuffer(payload.data.readBytes()),
+                    metadata
+                )
+
+                val result = proxy.requestResponse(defPayload).contextCapture().awaitSingle()
                 val response = Payload(
                     ByteReadChannel(result.data).readRemaining(),
                     ByteReadChannel(result.metadata).readRemaining()
@@ -74,11 +74,12 @@ internal class ServerObservabilityInterceptor(
         }
     }
 
-    private fun getRSocketWrapper(input: RSocket): io.rsocket.RSocket {
+    private fun getRSocketWrapper(input: RSocket, observationRegistry: ObservationRegistry): io.rsocket.RSocket {
         return object : io.rsocket.RSocket {
             override fun requestResponse(payload: io.rsocket.Payload): Mono<io.rsocket.Payload> {
                 val context = (Dispatchers.IO + input.coroutineContext).minusKey(Job().key)
-                return mono(context) {
+                val observation = observationRegistry.currentObservation!!
+                return observation.observeSuspendedMono(coroutineContext = context) {
                     val deserializedRequest = getDeserializedPayload(payload)
                     logger.info(
                         "Incoming rsocket request -> ${deserializedRequest.third}: " +
@@ -100,7 +101,7 @@ internal class ServerObservabilityInterceptor(
                             "request metadata: ${deserializedRequest.second}, " +
                             "response metadata: ${deserializedResponse.second}"
                     )
-                    return@mono response
+                    return@observeSuspendedMono response
                 }.contextCapture()
             }
         }
