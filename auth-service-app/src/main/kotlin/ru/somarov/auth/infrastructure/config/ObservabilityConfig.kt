@@ -74,6 +74,7 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
                 ObservationHandler.FirstMatchingCompositeObservationHandler(
                     KafkaTracePropagator(tracer, propagator),
                     RSocketRequesterTracingObservationHandler(tracer, propagator, ByteBufSetter(), false),
+                    // RSocketResponderTracingObservationHandler onstart cleans traceparent for some reason
                     RSocketResponderTracingObservationHandler(tracer, propagator, ByteBufGetter(), false),
                     PropagatingReceiverTracingObservationHandler(tracer, propagator),
                     PropagatingSenderTracingObservationHandler(tracer, propagator),
