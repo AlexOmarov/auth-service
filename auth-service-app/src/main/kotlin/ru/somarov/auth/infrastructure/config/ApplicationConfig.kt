@@ -60,7 +60,7 @@ internal fun Application.config() {
                     connector {
                         connectionConfig {
                             payloadMimeType = PayloadMimeType(
-                                data = WellKnownMimeType.ApplicationJson,
+                                data = WellKnownMimeType.ApplicationCbor,
                                 metadata = WellKnownMimeType.MessageRSocketCompositeMetadata
                             )
                         }

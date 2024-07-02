@@ -27,9 +27,10 @@ import io.rsocket.util.DefaultPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.cbor.Cbor
+import kotlinx.serialization.encodeToByteArray
 import net.javacrumbs.shedlock.core.LockConfiguration
 import reactor.core.publisher.Mono
 import ru.somarov.auth.infrastructure.micrometer.observeSuspendedMono
@@ -40,7 +41,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-@OptIn(ExperimentalMetadataApi::class)
+@OptIn(ExperimentalMetadataApi::class, ExperimentalSerializationApi::class)
 fun registerTasks(scheduler: Scheduler, client: RSocket, observationRegistry: ObservationRegistry) {
     val config = LockConfiguration(
         Instant.now(),
@@ -51,10 +52,8 @@ fun registerTasks(scheduler: Scheduler, client: RSocket, observationRegistry: Ob
 
     scheduler.register(config) {
         val request = buildPayload {
-            data(Json.Default.encodeToString(AuthorizationRequest(UUID.randomUUID())))
-            metadata(buildCompositeMetadata {
-                add(RoutingMetadata("login"))
-            })
+            data(Cbor.Default.encodeToByteArray(AuthorizationRequest(UUID.randomUUID())))
+            metadata(buildCompositeMetadata { add(RoutingMetadata("login")) })
         }
 
         val metadata = CompositeByteBuf(ByteBufAllocator.DEFAULT, true, 4000)
