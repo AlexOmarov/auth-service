@@ -31,7 +31,6 @@ import io.rsocket.micrometer.observation.ByteBufGetter
 import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
-import ru.somarov.auth.infrastructure.kafka.KafkaTracePropagator
 import ru.somarov.auth.infrastructure.props.AppProps
 import java.util.Collections
 import java.util.Properties
@@ -72,7 +71,6 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
         it.observationConfig()
             .observationHandler(
                 ObservationHandler.FirstMatchingCompositeObservationHandler(
-                    KafkaTracePropagator(tracer, propagator),
                     RSocketRequesterTracingObservationHandler(tracer, propagator, ByteBufSetter(), false),
                     // RSocketResponderTracingObservationHandler onstart cleans traceparent for some reason
                     RSocketResponderTracingObservationHandler(tracer, propagator, ByteBufGetter(), false),

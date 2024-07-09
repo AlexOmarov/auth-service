@@ -6,7 +6,6 @@ import io.opentelemetry.api.trace.SpanId
 import io.opentelemetry.api.trace.TraceId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.reactive.asFlow
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
@@ -85,7 +84,6 @@ class Producer<T : Any>(
         return "00-$traceId-$spanId-01"
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     @Suppress("TooGenericExceptionCaught", "UNCHECKED_CAST")
     private fun <T> createSenderOptions(): SenderOptions<String, T> {
         val producerProps: MutableMap<String, Any> = HashMap()

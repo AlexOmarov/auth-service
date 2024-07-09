@@ -18,29 +18,6 @@ application:
       validation-query: "$DB_POOL_VALIDATION_QUERY:SELECT 1"
   kafka:
     brokers: "$KAFKA_BROKERS:localhost:9092"
-    group: "auth-service"
-    message-retry-attempts: "3"
-    reconnect:
-      attempts: "3"
-      jitter: "0.5"
-      period-seconds: "2"
-    consumers:
-      mail:
-        enabled: "$KAFKA_MAIL_CONSUMER_ENABLED:false"
-        topic: "$KAFKA_MAIL_CONSUMER_TOPIC:mail_service_mail_broadcast"
-        name: "mail"
-        delay-ms: 0
-        reset: "earliest"
-        commit-interval-ms: 1000
-        max-poll-records: "50"
-      retry:
-        enabled: "$KAFKA_RETRY_CONSUMER_ENABLED:false"
-        topic: "$KAFKA_RETRY_CONSUMER_TOPIC:auth_service_retry"
-        name: "retry"
-        delay-ms: 5000
-        reset: "earliest"
-        commit-interval-ms: 1000
-        max-poll-records: "50"
     producers:
       retry:
         enabled: "$KAFKA_RETRY_PRODUCING_ENABLED:false"

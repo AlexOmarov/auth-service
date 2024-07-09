@@ -21,8 +21,8 @@ import java.util.concurrent.CancellationException
 
 class Scheduler(factory: ConnectionFactory, private val registry: ObservationRegistry) {
     private val logger = KtorSimpleLogger(this.javaClass.name)
-    private val tasks = mutableListOf<Pair<suspend () -> Unit, LockConfiguration>>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val tasks = mutableListOf<Pair<suspend () -> Unit, LockConfiguration>>()
     private val executor = DefaultLockingTaskExecutor(R2dbcLockProvider(factory))
 
     fun register(config: LockConfiguration, task: suspend () -> Unit) {

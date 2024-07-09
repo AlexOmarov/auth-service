@@ -26,9 +26,7 @@ fun createOpenTelemetrySdk(props: AppProps): OpenTelemetrySdk {
 }
 
 private fun buildMeterProvider(props: AppProps): SdkMeterProvider {
-    println(props)
-    val builder = SdkMeterProvider.builder()
-    return builder.build()
+    return SdkMeterProvider.builder().build()
 }
 
 private fun buildLoggerProvider(props: AppProps): SdkLoggerProvider {

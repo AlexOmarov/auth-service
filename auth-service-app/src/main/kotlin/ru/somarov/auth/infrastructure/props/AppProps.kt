@@ -1,5 +1,6 @@
 package ru.somarov.auth.infrastructure.props
 
+import io.ktor.server.application.ApplicationEnvironment
 import kotlin.time.Duration
 
 data class AppProps(
@@ -23,10 +24,6 @@ data class AppProps(
 
     data class KafkaProps(
         val brokers: String,
-        val messageRetryAttempts: Int,
-        val group: String,
-        val reconnect: KafkaConsumerReconnectProps,
-        val consumers: KafkaConsumersProps,
         val producers: KafkaProducersProps,
     )
 
@@ -39,27 +36,6 @@ data class AppProps(
         val enabled: Boolean,
         val topic: String,
         val maxInFlight: Int
-    )
-
-    data class KafkaConsumersProps(
-        val mail: KafkaConsumerProps,
-        val retry: KafkaConsumerProps
-    )
-
-    data class KafkaConsumerProps(
-        val enabled: Boolean,
-        val topic: String,
-        val name: String,
-        val delay: Long,
-        val reset: KafkaResetConfig,
-        val commitInterval: Long,
-        val maxPollRecords: Int
-    )
-
-    data class KafkaConsumerReconnectProps(
-        val attempts: Long,
-        val jitter: Double,
-        val periodSeconds: Long,
     )
 
     data class DbPoolProps(
@@ -79,7 +55,71 @@ data class AppProps(
         val tracingProbability: Double
     )
 
-    enum class KafkaResetConfig {
-        EARLIEST, LATEST
+    companion object {
+        fun parseProps(environment: ApplicationEnvironment): AppProps {
+            return AppProps(
+                name = environment.config.property("application.name").getString(),
+                instance = environment.config.property("application.instance").getString(),
+                db = parseDbProps(environment),
+                kafka = KafkaProps(
+                    brokers = environment.config.property("application.kafka.brokers").getString(),
+                    producers = KafkaProducersProps(
+                        dlq = KafkaProducerProps(
+                            enabled = environment.config.property("application.kafka.producers.retry.enabled")
+                                .getString().toBoolean(),
+                            topic = environment.config.property("application.kafka.producers.retry.topic")
+                                .getString(),
+                            maxInFlight = environment.config.property("application.kafka.producers.retry.max-in-flight")
+                                .getString().toInt()
+                        ), retry = KafkaProducerProps(
+                            enabled = environment.config.property("application.kafka.producers.dlq.enabled")
+                                .getString().toBoolean(),
+                            topic = environment.config.property("application.kafka.producers.dlq.topic")
+                                .getString(),
+                            maxInFlight = environment.config.property("application.kafka.producers.dlq.max-in-flight")
+                                .getString().toInt()
+
+                        )
+                    )
+                ),
+                otel = OtelProps(
+                    protocol = environment.config.property("application.otel.protocol").getString(),
+                    host = environment.config.property("application.otel.host").getString(),
+                    logsPort = environment.config.property("application.otel.logs-port").getString().toShort(),
+                    metricsPort = environment.config.property("application.otel.metrics-port").getString().toShort(),
+                    tracingPort = environment.config.property("application.otel.tracing-port").getString().toShort(),
+                    tracingProbability = environment.config.property("application.otel.tracing-probability").getString()
+                        .toDouble()
+                )
+            )
+        }
+
+        private fun parseDbProps(environment: ApplicationEnvironment): DbProps {
+            return DbProps(
+                host = environment.config.property("application.db.host").getString(),
+                port = environment.config.property("application.db.port").getString().toInt(),
+                name = environment.config.property("application.db.name").getString(),
+                schema = environment.config.property("application.db.schema").getString(),
+                user = environment.config.property("application.db.user").getString(),
+                password = environment.config.property("application.db.password").getString(),
+                connectionTimeout = Duration.parse(
+                    environment.config.property("application.db.connection-timeout").getString()
+                ),
+                statementTimeout = Duration.parse(
+                    environment.config.property("application.db.statement-timeout").getString()
+                ),
+                pool = DbPoolProps(
+                    maxSize = environment.config.property("application.db.pool.max-size").getString().toInt(),
+                    minIdle = environment.config.property("application.db.pool.min-idle").getString().toInt(),
+                    maxIdleTime = Duration.parse(
+                        environment.config.property("application.db.pool.max-idle-time").getString()
+                    ),
+                    maxLifeTime = Duration.parse(
+                        environment.config.property("application.db.pool.max-life-time").getString()
+                    ),
+                    validationQuery = environment.config.property("application.db.pool.validation-query").getString()
+                )
+            )
+        }
     }
 }
