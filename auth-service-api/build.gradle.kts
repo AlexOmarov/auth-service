@@ -15,7 +15,6 @@ dependencies {
     api(libs.kotlin.serialization.core)
     api(libs.swagger.annotations)
     api(libs.kotlin.datetime)
-    api(libs.jakarta.validation.api)
 }
 
 publishing {

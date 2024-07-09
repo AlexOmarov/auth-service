@@ -16,7 +16,7 @@ import kotlinx.coroutines.runBlocking
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
-import ru.somarov.auth.infrastructure.micrometer.observeAndAwait
+import ru.somarov.auth.infrastructure.observability.micrometer.observeAndAwait
 import java.util.concurrent.CancellationException
 
 class Scheduler(factory: ConnectionFactory, private val registry: ObservationRegistry) {
@@ -56,7 +56,7 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
                         deferred.complete(Unit)
                     }
                 }, config)
-                if(isExecuting) {
+                if (isExecuting) {
                     deferred.await()
                 }
                 val endTime = System.currentTimeMillis()

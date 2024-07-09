@@ -1,14 +1,9 @@
-package ru.somarov.auth.infrastructure.config
+package ru.somarov.auth.infrastructure.observability
 
 import io.ktor.server.application.Application
-import io.ktor.server.application.install
-import io.ktor.server.metrics.micrometer.MicrometerMetrics
 import io.micrometer.core.instrument.Clock
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
-import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
-import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
@@ -31,11 +26,12 @@ import io.rsocket.micrometer.observation.ByteBufGetter
 import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
+import ru.somarov.auth.infrastructure.observability.opentelemetry.createOpenTelemetrySdk
 import ru.somarov.auth.infrastructure.props.AppProps
 import java.util.Collections
 import java.util.Properties
 
-fun setupObservability(application: Application, props: AppProps): Pair<MeterRegistry, ObservationRegistry> {
+fun setupObservability(props: AppProps): Pair<MeterRegistry, ObservationRegistry> {
     val sdk = createOpenTelemetrySdk(props)
     val buildProps = getBuildProperties()
 
@@ -50,11 +46,6 @@ fun setupObservability(application: Application, props: AppProps): Pair<MeterReg
         .description("Version of project in tag")
         .tag("version", buildProps.getProperty("version", "undefined"))
         .register(meterRegistry)
-
-    application.install(MicrometerMetrics) {
-        registry = meterRegistry
-        meterBinders = listOf(JvmMemoryMetrics(), JvmGcMetrics(), ProcessorMetrics())
-    }
 
     val oteltracer = sdk.tracerProvider["io.micrometer.micrometer-tracing"]
     val context = OtelCurrentTraceContext()

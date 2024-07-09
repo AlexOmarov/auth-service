@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.micrometer
+package ru.somarov.auth.infrastructure.observability.micrometer
 
 import io.micrometer.core.instrument.kotlin.asContextElement
 import io.micrometer.observation.Observation

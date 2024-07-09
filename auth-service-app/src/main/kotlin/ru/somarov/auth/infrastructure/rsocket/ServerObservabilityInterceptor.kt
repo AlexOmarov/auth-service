@@ -8,7 +8,6 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.observation.ObservationRegistry
 import io.netty.buffer.ByteBufAllocator
 import io.netty.buffer.ByteBufUtil.isText
-import io.netty.buffer.CompositeByteBuf
 import io.netty.buffer.Unpooled
 import io.rsocket.kotlin.ExperimentalMetadataApi
 import io.rsocket.kotlin.RSocket
@@ -27,7 +26,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.serialization.SerializationException
 import reactor.core.publisher.Mono
-import ru.somarov.auth.infrastructure.micrometer.observeSuspendedMono
+import ru.somarov.auth.infrastructure.observability.micrometer.observeSuspendedMono
 import java.nio.charset.Charset
 import kotlin.coroutines.CoroutineContext
 
@@ -50,7 +49,7 @@ internal class ServerObservabilityInterceptor(
                 get() = input.coroutineContext
 
             override suspend fun requestResponse(payload: Payload): Payload {
-                val metadata = CompositeByteBuf(ByteBufAllocator.DEFAULT, true, 4000)
+                val metadata = ByteBufAllocator.DEFAULT.compositeBuffer()
                 payload.metadata?.copy()?.read(BufferPool.Default)?.entries?.forEach {
                     CompositeMetadataCodec.encodeAndAddMetadata(
                         metadata,

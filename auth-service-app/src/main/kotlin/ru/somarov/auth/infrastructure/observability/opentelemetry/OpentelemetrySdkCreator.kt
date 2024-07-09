@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.config
+package ru.somarov.auth.infrastructure.observability.opentelemetry
 
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes

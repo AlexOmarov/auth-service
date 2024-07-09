@@ -13,16 +13,22 @@ import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import ru.somarov.auth.application.service.Service
-import ru.somarov.auth.presentation.request.AuthorizationRequest
+import ru.somarov.auth.presentation.request.ValidationRequest
+import ru.somarov.auth.presentation.response.ValidationResponse
 
 internal fun Routing.authSocket(service: Service) {
-    val handler = RSocketRequestHandler { requestResponse { respond(it, service) } }
-    rSocket("login") { handler }
+    rSocket("validate") {
+        RSocketRequestHandler {
+            requestResponse { validate(it, service) }
+        }
+    }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
-private suspend fun respond(payload: Payload, service: Service): Payload {
-    val req = Cbor.Default.decodeFromByteArray<AuthorizationRequest>(payload.data.readBytes())
-    val result = service.makeWork(req.userId.toString())
-    return buildPayload { data { writePacket(ByteReadPacket(Cbor.Default.encodeToByteArray(result))) } }
+private suspend fun validate(payload: Payload, service: Service): Payload {
+    val req = Cbor.Default.decodeFromByteArray<ValidationRequest>(payload.data.readBytes())
+    val result = service.validate(req)
+    return buildPayload {
+        data { writePacket(ByteReadPacket(Cbor.Default.encodeToByteArray(ValidationResponse(result)))) }
+    }
 }
