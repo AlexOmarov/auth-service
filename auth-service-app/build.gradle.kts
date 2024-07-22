@@ -45,12 +45,18 @@ configurations.matching { it.name == "detekt" }.all {
 }
 
 application {
-    mainClass.set("io.ktor.server.netty.EngineMain")
+    mainClass.set("ru.somarov.auth.AppKt")
 }
 
 ktor {
     fatJar {
         archiveFileName.set("app.jar")
+    }
+}
+
+tasks {
+    shadowJar {
+        mergeServiceFiles() // for micrometer reactor context propagation
     }
 }
 
@@ -76,6 +82,9 @@ tasks.named("jar") {
     dependsOn("generateBuildInfo")
 }
 
+tasks.named("buildFatJar") {
+    dependsOn("generateBuildInfo")
+}
 
 tasks.withType<Test> {
     useJUnitPlatform()
