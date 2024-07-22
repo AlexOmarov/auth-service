@@ -44,9 +44,11 @@ internal fun Application.config() {
     val (meterRegistry, observationRegistry) = setupObservability(props)
 
     val dbClient = DatabaseClient(props, meterRegistry)
-    val repo = ClientRepo(dbClient)
+
+    val clientRepo = ClientRepo(dbClient)
     val revokedAuthorizationRepo = RevokedAuthorizationRepo(dbClient)
-    val service = Service(repo, revokedAuthorizationRepo)
+
+    val service = Service(clientRepo, revokedAuthorizationRepo)
 
     val scheduler = Scheduler(dbClient.factory, observationRegistry)
 
@@ -80,16 +82,13 @@ internal fun Application.config() {
     }
 
     install(WebSockets)
+
     install(RSocketSupport) {
         server {
             interceptors {
                 forResponder(ServerObservabilityInterceptor(meterRegistry, observationRegistry))
             }
         }
-    }
-
-    routing {
-        authSocket(service)
     }
 
     environment.monitor.subscribe(ServerReady) {
@@ -99,5 +98,9 @@ internal fun Application.config() {
 
     environment.monitor.subscribe(ApplicationStopped) {
         scheduler.stop()
+    }
+
+    routing {
+        authSocket(service)
     }
 }

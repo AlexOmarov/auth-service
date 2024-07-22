@@ -49,7 +49,7 @@ jobs:
       - name: GradleSetup
         uses: gradle/gradle-build-action@v2.4.2
         with:
-          gradle-version: 8.8
+          gradle-version: 8.9
 
       - name: Build and test
         run: ./gradlew build

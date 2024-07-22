@@ -1,9 +1,9 @@
 FROM bellsoft/liberica-runtime-container:jre-21-crac-slim-glibc
 
-RUN addgroup --system --gid 800 appuser && \
-    adduser --system --uid 800 appuser
+RUN addgroup --system --gid 800 appuser && adduser --system --uid 800 appuser
 
 RUN mkdir -p /docs && chown appuser:appuser /docs
+
 RUN chmod 755 /docs
 
 USER appuser

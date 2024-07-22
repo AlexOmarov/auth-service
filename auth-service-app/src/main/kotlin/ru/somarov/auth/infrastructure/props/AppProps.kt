@@ -69,8 +69,8 @@ data class AppProps(
                                 .getString().toBoolean(),
                             topic = environment.config.property("application.kafka.producers.retry.topic")
                                 .getString(),
-                            maxInFlight = environment.config.property("application.kafka.producers.retry.max-in-flight")
-                                .getString().toInt()
+                            maxInFlight = environment.config
+                                .property("application.kafka.producers.retry.max-in-flight").getString().toInt()
                         ), retry = KafkaProducerProps(
                             enabled = environment.config.property("application.kafka.producers.dlq.enabled")
                                 .getString().toBoolean(),

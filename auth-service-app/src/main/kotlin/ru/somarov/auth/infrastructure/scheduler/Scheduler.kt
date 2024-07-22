@@ -20,6 +20,7 @@ import ru.somarov.auth.infrastructure.observability.micrometer.observeAndAwait
 import java.util.concurrent.CancellationException
 
 class Scheduler(factory: ConnectionFactory, private val registry: ObservationRegistry) {
+
     private val logger = KtorSimpleLogger(this.javaClass.name)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val tasks = mutableListOf<Pair<suspend () -> Unit, LockConfiguration>>()

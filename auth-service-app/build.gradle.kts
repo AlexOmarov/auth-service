@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     application
+
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktor)
     alias(libs.plugins.sonarqube)
@@ -13,35 +14,22 @@ detekt {
 }
 
 dependencies {
-    implementation(project(":auth-service-api"))
-
     detektPlugins(libs.detekt.ktlint)
 
-    implementation(libs.bundles.web)
-    implementation(libs.bundles.kafka)
-    implementation(libs.bundles.database)
-    implementation(libs.bundles.shedlock)
+    implementation(project(":auth-service-api"))
 
+    implementation(libs.bundles.database)
+    implementation(libs.bundles.kafka)
+    implementation(libs.bundles.kotlinx)
+    implementation(libs.bundles.logback)
+    implementation(libs.bundles.micrometer)
     implementation(libs.bundles.postgres)
     implementation(libs.bundles.redis)
-    implementation(libs.bundles.micrometer)
-    implementation(libs.bundles.shedlock)
     implementation(libs.bundles.rsocket)
+    implementation(libs.bundles.shedlock)
+    implementation(libs.bundles.web)
 
-    implementation(libs.kotlin.serialization.core)
-    implementation(libs.kotlin.serialization.cbor)
-    implementation(libs.kotlin.serialization.json)
-    implementation(libs.kotlin.jackson)
-    implementation(libs.kotlin.jackson.cbor)
-
-    implementation(libs.kotlin.datetime)
-
-    implementation(libs.rsocket.micrometer)
-    implementation(libs.kotlin.coroutines.reactor)
-    implementation(libs.logback)
-    implementation(libs.logback.logstash)
-    implementation(libs.logback.otel)
-    implementation(libs.otel.otlp)
+    implementation(libs.otel.otlp.exporter)
 
     testImplementation(libs.bundles.test)
     testRuntimeOnly(libs.junit.launcher)
@@ -54,10 +42,6 @@ configurations.matching { it.name == "detekt" }.all {
             useVersion(io.gitlab.arturbosch.detekt.getSupportedKotlinVersion())
         }
     }
-}
-
-repositories {
-    mavenCentral()
 }
 
 application {
@@ -75,13 +59,16 @@ tasks.register("generateBuildInfo") {
     description = "Generates build-info.properties file with build metadata."
 
     doLast {
-        val buildInfoFile = file("${layout.buildDirectory.asFile.get().path}/resources/main/META-INF/build-info.properties")
+        val buildInfoFile =
+            file("${layout.buildDirectory.asFile.get().path}/resources/main/META-INF/build-info.properties")
         buildInfoFile.parentFile.mkdirs()
-        buildInfoFile.writeText("""
+        buildInfoFile.writeText(
+            """
             build.version=${project.version}
             build.group=${project.group}
             build.artifact=${project.name}
-        """.trimIndent())
+        """.trimIndent()
+        )
     }
 }
 

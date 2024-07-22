@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.sonarqube)
 }
 
+allprojects.forEach { it.group = "ru.somarov" }
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_21)
