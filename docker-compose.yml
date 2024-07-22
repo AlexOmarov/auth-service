@@ -4,8 +4,7 @@ services:
     # Uncomment to use prebuilt srcs instead of image
     build:
      context: .
-    # image: decentboat/mail-service:latest
-    container_name: service
+    # image: decentboat/auth-service:latest
     healthcheck:
       test: "wget --no-verbose --tries=1 --spider localhost:8080/health || exit 1"
       interval: 5s
@@ -16,18 +15,20 @@ services:
       - db
       - kafka
     environment:
-      KAFKA_BROKERS: kafka:9092
-      DB_HOST: db
+      APP_NAME: "auth-service"
+      KAFKA_BROKERS: "kafka:9092"
+      DB_HOST: "db"
+      OTEL_HOST: "collector"
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://collector:4318/v1/metrics"
     ports:
       - "8080:8080"
 
   # Storage
   db:
     image: postgres:16.3
-    container_name: db
     restart: always
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_PASSWORD: auth_service
       POSTGRES_USER: auth_service

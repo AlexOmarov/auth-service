@@ -29,6 +29,7 @@ import ru.somarov.auth.infrastructure.observability.setupObservability
 import ru.somarov.auth.infrastructure.props.AppProps
 import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
+import ru.somarov.auth.presentation.http.healthcheck
 import ru.somarov.auth.presentation.request.ValidationRequest
 import ru.somarov.auth.presentation.response.ErrorResponse
 import ru.somarov.auth.presentation.rsocket.authSocket
@@ -101,6 +102,7 @@ internal fun Application.config() {
     }
 
     routing {
+        healthcheck()
         authSocket(service)
     }
 }

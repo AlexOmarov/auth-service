@@ -29,7 +29,7 @@ application:
         max-in-flight: "1"
   otel:
     protocol: "http"
-    host: "localhost"
+    host: "$OTEL_HOST:localhost"
     logs-port: "4317"
     metrics-port: "4318"
     tracing-port: "4319"
@@ -37,7 +37,7 @@ application:
 
 ktor:
   deployment:
-    port: 9099
+    port: 8080
   application:
     modules:
       - ru.somarov.auth.infrastructure.config.ApplicationConfigKt.config

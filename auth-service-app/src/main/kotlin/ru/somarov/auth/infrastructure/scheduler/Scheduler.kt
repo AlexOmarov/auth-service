@@ -48,14 +48,14 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
                 @Suppress("TooGenericExceptionCaught") // have to catch all exceptions to complete deferred
                 executor.executeWithLock(kotlinx.coroutines.Runnable {
                     isExecuting = true
-                    runBlocking(Dispatchers.IO) {
-                        try {
+                    try {
+                        runBlocking(Dispatchers.IO) {
                             execute(task, config)
-                        } catch (e: Throwable) {
-                            logger.error("Got error executing")
                         }
-                        deferred.complete(Unit)
+                    } catch (e: Throwable) {
+                        logger.error("Got error executing")
                     }
+                    deferred.complete(Unit)
                 }, config)
                 if (isExecuting) {
                     deferred.await()
