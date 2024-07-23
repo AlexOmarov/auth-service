@@ -19,13 +19,13 @@ import ru.somarov.auth.infrastructure.props.AppProps
 fun createOpenTelemetrySdk(props: AppProps): OpenTelemetrySdk {
     return OpenTelemetrySdk.builder()
         .setPropagators { W3CTraceContextPropagator.getInstance() }
-        .setMeterProvider(buildMeterProvider(props))
+        .setMeterProvider(buildMeterProvider())
         .setLoggerProvider(buildLoggerProvider(props))
         .setTracerProvider(buildTracerProvider(props))
         .build()
 }
 
-private fun buildMeterProvider(props: AppProps): SdkMeterProvider {
+private fun buildMeterProvider(): SdkMeterProvider {
     return SdkMeterProvider.builder().build()
 }
 
