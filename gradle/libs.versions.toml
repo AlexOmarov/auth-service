@@ -34,6 +34,7 @@ shedlock = "5.13.0"
 sonarqube = "5.0.0.4638"
 swagger-annotations="2.2.22"
 testcontainers = "1.19.8"
+kotlin-test = "2.0.20-Beta2"
 testcontainers-redis = "2.2.2"
 
 [libraries]
@@ -54,6 +55,7 @@ kotlin-jackson-cbor = { group = "com.fasterxml.jackson.dataformat", name = "jack
 kotlin-serialization-cbor = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-cbor", version.ref = "kotlin-serialization" }
 kotlin-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlin-serialization" }
 kotlin-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlin-serialization" }
+kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin-test" }
 ktor-server-call-id = { group = "io.ktor", name = "ktor-server-call-id", version.ref = "ktor" }
 ktor-server-config-yaml = { group = "io.ktor", name = "ktor-server-config-yaml", version.ref = "ktor" }
 ktor-server-content-negotiation = { group = "io.ktor", name = "ktor-server-content-negotiation", version.ref = "ktor" }
@@ -66,7 +68,7 @@ ktor-server-serialization-kotlinx-cbor = { group = "io.ktor", name = "ktor-seria
 ktor-server-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-server-status-pages = { group = "io.ktor", name = "ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-swagger = { group = "io.ktor", name = "ktor-server-swagger", version.ref = "ktor" }
-ktor-server-tests = { group = "io.ktor", name = "ktor-server-tests", version.ref = "ktor" }
+ktor-server-tests = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 logback = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
 logback-logstash = { group = "net.logstash.logback", name = "logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 logback-otel = { group = "io.opentelemetry.instrumentation", name = "opentelemetry-logback-appender-1.0", version.ref = "otel-logback-encoder" }
@@ -113,7 +115,7 @@ postgres = ["flyway-postgres", "postgresql", "testcontainers-postgres", "r2dbc-p
 redis = ["testcontainers-redis"]
 rsocket = ["rsocket-core", "rsocket-micrometer", "rsocket-ktor-client", "rsocket-ktor-server"]
 shedlock = ["shedlock-core", "shedlock-provider-r2dbc"]
-test = ["junit-api", "junit-engine", "testcontainers-junit", "mockito", "awaitility", "reactor-test"]
+test = ["junit-api", "junit-engine", "kotlin-test", "testcontainers-junit", "mockito", "awaitility", "reactor-test"]
 web = [
     "ktor-server-core",
     "ktor-server-netty",

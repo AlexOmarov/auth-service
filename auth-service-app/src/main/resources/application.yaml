@@ -1,4 +1,9 @@
-application:
+ktor:
+  deployment:
+    port: 8080
+  application:
+    modules:
+      - ru.somarov.auth.infrastructure.config.ApplicationConfigKt.config
   name: "$APP_NAME:auth-service"
   instance: "$HOSTNAME:undefined"
   db:
@@ -34,10 +39,3 @@ application:
     metrics-port: "4318"
     tracing-port: "4319"
     tracing-probability: "1.0"
-
-ktor:
-  deployment:
-    port: 8080
-  application:
-    modules:
-      - ru.somarov.auth.infrastructure.config.ApplicationConfigKt.config
