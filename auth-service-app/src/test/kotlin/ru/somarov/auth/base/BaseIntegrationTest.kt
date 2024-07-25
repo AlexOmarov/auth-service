@@ -49,15 +49,5 @@ abstract class BaseIntegrationTest {
             withReuse(true)
             start()
         }
-
-        init {
-            System.setProperty("KAFKA_BROKERS", kafka.bootstrapServers)
-
-            System.setProperty("DB_HOST", postgresql.host)
-            System.setProperty("DB_PORT", postgresql.firstMappedPort.toString())
-            System.setProperty("DB_NAME", postgresql.databaseName)
-            System.setProperty("DB_USER", postgresql.username)
-            System.setProperty("DB_PASSWORD", postgresql.password)
-        }
     }
 }
