@@ -32,8 +32,6 @@ dependencies {
     implementation(libs.otel.otlp.exporter)
 
     testImplementation(libs.bundles.test)
-    testRuntimeOnly(libs.junit.launcher)
-
 }
 
 configurations.matching { it.name == "detekt" }.all {
