@@ -1,20 +1,15 @@
 package ru.somarov.auth.infrastructure.config
 
-import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.cbor.cbor
-import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationStopped
-import io.ktor.server.application.ServerReady
-import io.ktor.server.application.install
-import io.ktor.server.metrics.micrometer.MicrometerMetrics
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.requestvalidation.RequestValidation
-import io.ktor.server.plugins.requestvalidation.RequestValidationException
-import io.ktor.server.plugins.requestvalidation.ValidationResult
-import io.ktor.server.plugins.statuspages.StatusPages
-import io.ktor.server.response.respond
-import io.ktor.server.routing.routing
-import io.ktor.server.websocket.WebSockets
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.cbor.*
+import io.ktor.server.application.*
+import io.ktor.server.metrics.micrometer.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.requestvalidation.*
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
@@ -27,14 +22,14 @@ import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.db.repo.RevokedAuthorizationRepo
 import ru.somarov.auth.infrastructure.observability.setupObservability
 import ru.somarov.auth.infrastructure.props.AppProps
-import ru.somarov.auth.infrastructure.rsocket.ServerInterceptor
+import ru.somarov.auth.infrastructure.rsocket.server.Interceptor
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import ru.somarov.auth.presentation.http.healthcheck
 import ru.somarov.auth.presentation.request.ValidationRequest
 import ru.somarov.auth.presentation.response.ErrorResponse
 import ru.somarov.auth.presentation.rsocket.authSocket
 import ru.somarov.auth.presentation.scheduler.registerTasks
-import java.util.TimeZone
+import java.util.*
 
 @Suppress("unused") // Referenced in application.yaml
 @OptIn(ExperimentalSerializationApi::class)
@@ -87,7 +82,7 @@ internal fun Application.config() {
     install(RSocketSupport) {
         server {
             interceptors {
-                forResponder(ServerInterceptor(meterRegistry, observationRegistry))
+                forResponder(Interceptor(meterRegistry, observationRegistry))
             }
         }
     }

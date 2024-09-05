@@ -6,6 +6,7 @@ kafka = "1.3.23"
 kompendium = "3.14.4"
 kotlin = "2.0.0"
 kotlin-datetime="0.6.0"
+kotlin-logging="7.0.0"
 kotlin-reactor="1.8.1"
 kotlin-serialization = "1.7.1"
 kover = "0.8.1"
@@ -41,6 +42,7 @@ kafka = { module = "io.projectreactor.kafka:reactor-kafka", version.ref = "kafka
 kompendium = { group = "io.bkbn", name = "kompendium-core", version.ref = "kompendium" }
 kotlin-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor", version.ref = "kotlin-reactor" }
 kotlin-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlin-datetime" }
+kotlin-logging = { group = "io.github.oshai", name = "kotlin-logging", version.ref = "kotlin-logging" }
 kotlin-jackson = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
 kotlin-jackson-cbor = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-cbor", version.ref = "jackson" }
 kotlin-serialization-cbor = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-cbor", version.ref = "kotlin-serialization" }
@@ -94,6 +96,7 @@ kafka = ["kafka", "testcontainers-kafka"]
 kotlinx = [
     "kotlin-coroutines-reactor",
     "kotlin-datetime",
+    "kotlin-logging",
     "kotlin-jackson",
     "kotlin-jackson-cbor",
     "kotlin-serialization-cbor",
