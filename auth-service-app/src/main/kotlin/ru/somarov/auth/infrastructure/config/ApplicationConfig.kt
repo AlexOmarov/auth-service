@@ -27,7 +27,7 @@ import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.db.repo.RevokedAuthorizationRepo
 import ru.somarov.auth.infrastructure.observability.setupObservability
 import ru.somarov.auth.infrastructure.props.AppProps
-import ru.somarov.auth.infrastructure.rsocket.ServerObservabilityInterceptor
+import ru.somarov.auth.infrastructure.rsocket.ServerInterceptor
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import ru.somarov.auth.presentation.http.healthcheck
 import ru.somarov.auth.presentation.request.ValidationRequest
@@ -87,7 +87,7 @@ internal fun Application.config() {
     install(RSocketSupport) {
         server {
             interceptors {
-                forResponder(ServerObservabilityInterceptor(meterRegistry, observationRegistry))
+                forResponder(ServerInterceptor(meterRegistry, observationRegistry))
             }
         }
     }

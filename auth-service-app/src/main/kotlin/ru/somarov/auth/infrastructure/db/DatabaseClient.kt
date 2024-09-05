@@ -28,11 +28,7 @@ import kotlin.time.toJavaDuration
 
 class DatabaseClient(props: AppProps, registry: MeterRegistry) {
     private val logger = KtorSimpleLogger(this.javaClass.name)
-    val factory: ConnectionFactory
-
-    init {
-        factory = createFactory(props.db, registry, props.name)
-    }
+    val factory: ConnectionFactory = createFactory(props.db, registry, props.name)
 
     @Suppress("kotlin:S6518", "TooGenericExceptionCaught") // Cannot replace with index accessor
     suspend fun <T> execute(

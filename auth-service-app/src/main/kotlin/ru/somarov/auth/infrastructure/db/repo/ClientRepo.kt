@@ -1,6 +1,5 @@
 package ru.somarov.auth.infrastructure.db.repo
 
-import ru.somarov.auth.application.dto.Client
 import ru.somarov.auth.infrastructure.db.DatabaseClient
 import java.util.UUID
 

@@ -24,6 +24,8 @@ r2dbc-postgresql = "1.0.5.RELEASE"
 reactor-pool="1.0.6"
 rsocket-micrometer = "1.1.4"
 rsocket="0.16.0"
+rsocket-transport-ktor="0.15.4"
+rsocket-transport-netty="1.1.4"
 shedlock = "5.13.0"
 sonarqube = "5.0.0.4638"
 swagger-annotations="2.2.22"
@@ -75,6 +77,8 @@ reactor-pool = { group = "io.projectreactor.addons", name = "reactor-pool", vers
 rsocket-core = { group = "io.rsocket.kotlin", name = "rsocket-core", version.ref = "rsocket" }
 rsocket-ktor-client = { group = "io.rsocket.kotlin", name = "rsocket-ktor-client", version.ref = "rsocket" }
 rsocket-ktor-server = { group = "io.rsocket.kotlin", name = "rsocket-ktor-server", version.ref = "rsocket" }
+rsocket-transport-ktor = { group = "io.rsocket.kotlin", name = "rsocket-transport-ktor", version.ref = "rsocket-transport-ktor" }
+rsocket-transport-netty = { group = "io.rsocket", name = "rsocket-transport-netty", version.ref = "rsocket-transport-netty" }
 rsocket-micrometer = { module = "io.rsocket:rsocket-micrometer", version.ref = "rsocket-micrometer" }
 shedlock-core = { group = "net.javacrumbs.shedlock", name = "shedlock-core", version.ref = "shedlock" }
 shedlock-provider-r2dbc = { group = "net.javacrumbs.shedlock", name = "shedlock-provider-r2dbc", version.ref = "shedlock" }
@@ -100,7 +104,14 @@ logback = ["logback", "logback-logstash", "logback-otel"]
 micrometer = ["micrometer", "micrometer-registry-otlp", "micrometer-reactor", "micrometer-tracing", "micrometer-tracing-otel", "micrometer-context-propagation"]
 postgres = ["flyway-postgres", "postgresql", "testcontainers-postgres", "r2dbc-postgresql"]
 redis = ["testcontainers-redis"]
-rsocket = ["rsocket-core", "rsocket-micrometer", "rsocket-ktor-client", "rsocket-ktor-server"]
+rsocket = [
+    "rsocket-core",
+    "rsocket-micrometer",
+    "rsocket-ktor-client",
+    "rsocket-ktor-server",
+    "rsocket-transport-ktor",
+    "rsocket-transport-netty"
+]
 shedlock = ["shedlock-core", "shedlock-provider-r2dbc"]
 test = ["kotlin-test", "testcontainers"]
 web = [
