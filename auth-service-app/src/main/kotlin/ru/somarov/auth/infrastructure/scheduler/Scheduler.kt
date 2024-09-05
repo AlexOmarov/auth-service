@@ -1,18 +1,10 @@
 package ru.somarov.auth.infrastructure.scheduler
 
-import io.ktor.util.logging.KtorSimpleLogger
+import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.micrometer.observation.Observation
 import io.micrometer.observation.ObservationRegistry
 import io.r2dbc.spi.ConnectionFactory
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
@@ -21,7 +13,7 @@ import java.util.concurrent.CancellationException
 
 class Scheduler(factory: ConnectionFactory, private val registry: ObservationRegistry) {
 
-    private val logger = KtorSimpleLogger(this.javaClass.name)
+    private val logger = logger { }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val tasks = mutableListOf<Pair<suspend () -> Unit, LockConfiguration>>()
     private val executor = DefaultLockingTaskExecutor(R2dbcLockProvider(factory))
@@ -53,7 +45,7 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
                             execute(task, config)
                         }
                     } catch (e: Throwable) {
-                        logger.error("Got error executing")
+                        logger.error(e) { "Got error executing" }
                     }
                     deferred.complete(Unit)
                 }, config)
@@ -68,9 +60,9 @@ class Scheduler(factory: ConnectionFactory, private val registry: ObservationReg
 
     private suspend fun execute(task: suspend () -> Unit, config: LockConfiguration) {
         Observation.createNotStarted(config.name, registry).observeAndAwait {
-            logger.info("Started task ${config.name}")
+            logger.info { "Started task ${config.name}" }
             task()
-            logger.info("Task ${config.name} is completed")
+            logger.info { "Task ${config.name} is completed" }
         }
     }
 }

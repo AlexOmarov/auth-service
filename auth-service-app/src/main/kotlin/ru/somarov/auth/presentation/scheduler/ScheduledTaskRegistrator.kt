@@ -1,6 +1,6 @@
 package ru.somarov.auth.presentation.scheduler
 
-import io.ktor.util.logging.KtorSimpleLogger
+import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import net.javacrumbs.shedlock.core.LockConfiguration
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import java.time.Duration
@@ -15,6 +15,6 @@ fun registerTasks(scheduler: Scheduler) {
     )
 
     scheduler.register(config) {
-        KtorSimpleLogger("TEST").info("wow")
+        logger { }.info { "wow" }
     }
 }

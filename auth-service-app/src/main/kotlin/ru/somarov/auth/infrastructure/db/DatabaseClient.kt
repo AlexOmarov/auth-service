@@ -1,6 +1,6 @@
 package ru.somarov.auth.infrastructure.db
 
-import io.ktor.util.logging.KtorSimpleLogger
+import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
@@ -9,12 +9,7 @@ import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionFactory
 import io.r2dbc.postgresql.api.PostgresTransactionDefinition
-import io.r2dbc.spi.Connection
-import io.r2dbc.spi.ConnectionFactory
-import io.r2dbc.spi.IsolationLevel
-import io.r2dbc.spi.Row
-import io.r2dbc.spi.RowMetadata
-import io.r2dbc.spi.ValidationDepth
+import io.r2dbc.spi.*
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -27,7 +22,7 @@ import ru.somarov.auth.infrastructure.props.AppProps
 import kotlin.time.toJavaDuration
 
 class DatabaseClient(props: AppProps, registry: MeterRegistry) {
-    private val logger = KtorSimpleLogger(this.javaClass.name)
+    private val logger = logger { }
     val factory: ConnectionFactory = createFactory(props.db, registry, props.name)
 
     @Suppress("kotlin:S6518", "TooGenericExceptionCaught") // Cannot replace with index accessor
@@ -43,10 +38,10 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
             statement.execute().asFlow()
                 .map { it.map { row, meta -> mapper(row, meta) }.awaitFirstOrNull() }.filterNotNull().toList()
         } catch (e: Throwable) {
-            logger.error(
+            logger.error(e) {
                 "Got error while trying to perform sql query: query - " +
-                    "$query, params - $params, ex - ${e.message}", e
-            )
+                    "$query, params - $params, ex - ${e.message}"
+            }
             throw e
         } finally {
             connection.close().awaitFirstOrNull()
@@ -71,10 +66,10 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
             connection.commitTransaction()
             result
         } catch (e: Throwable) {
-            logger.error(
+            logger.error(e) {
                 "Got error while trying to perform transactional sql query: query - " +
-                    "$query, params - $params, ex - ${e.message}", e
-            )
+                    "$query, params - $params, ex - ${e.message}"
+            }
             throw e
         } finally {
             connection.commitTransaction()
@@ -95,7 +90,7 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
             connection.commitTransaction()
             result
         } catch (e: Throwable) {
-            logger.error("Got error while trying to perform transactional action", e)
+            logger.error(e) { "Got error while trying to perform transactional action" }
             throw e
         } finally {
             connection.commitTransaction()
