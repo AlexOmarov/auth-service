@@ -32,6 +32,10 @@ ktor:
         enabled: "$KAFKA_RETRY_DLQ_ENABLED:false"
         topic: "auth_service_dlq"
         max-in-flight: "1"
+      registration:
+        enabled: "$KAFKA_REGISTRATION_ENABLED:false"
+        topic: "auth_service_registration_broadcast"
+        max-in-flight: "1"
   otel:
     protocol: "http"
     host: "$OTEL_HOST:localhost"

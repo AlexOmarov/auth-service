@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
+import io.micrometer.observation.ObservationRegistry
 import io.r2dbc.pool.ConnectionPool
 import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
@@ -19,9 +20,10 @@ import kotlinx.coroutines.reactive.awaitSingle
 import org.flywaydb.core.Flyway
 import reactor.core.scheduler.Schedulers
 import ru.somarov.auth.infrastructure.props.AppProps
+import ru.somarov.auth.infrastructure.props.DbProps
 import kotlin.time.toJavaDuration
 
-class DatabaseClient(props: AppProps, registry: MeterRegistry) {
+class DatabaseClient(props: AppProps, registry: MeterRegistry, observationRegistry: ObservationRegistry) {
     private val logger = logger { }
     val factory: ConnectionFactory = createFactory(props.db, registry, props.name)
 
@@ -99,7 +101,7 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry) {
         return res
     }
 
-    private fun createFactory(props: AppProps.DbProps, registry: MeterRegistry, name: String): ConnectionFactory {
+    private fun createFactory(props: DbProps, registry: MeterRegistry, name: String): ConnectionFactory {
 
         val configuration = Flyway.configure()
             .dataSource(

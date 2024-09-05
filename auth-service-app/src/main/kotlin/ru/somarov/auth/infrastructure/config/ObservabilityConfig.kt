@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.observability
+package ru.somarov.auth.infrastructure.config
 
 import io.ktor.server.application.Application
 import io.micrometer.core.instrument.Clock

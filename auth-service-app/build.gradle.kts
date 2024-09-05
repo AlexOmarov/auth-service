@@ -30,6 +30,7 @@ dependencies {
     implementation(libs.bundles.web)
 
     implementation(libs.otel.otlp.exporter)
+    implementation(libs.jwt)
 
     testImplementation(libs.bundles.test)
 }
