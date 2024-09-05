@@ -5,7 +5,6 @@ import io.micrometer.observation.ObservationRegistry
 import io.rsocket.kotlin.ExperimentalMetadataApi
 import io.rsocket.kotlin.RSocket
 import io.rsocket.kotlin.core.Interceptor
-import ru.somarov.auth.infrastructure.rsocket.server.Decorator
 
 internal class Interceptor(
     private val meterRegistry: MeterRegistry,

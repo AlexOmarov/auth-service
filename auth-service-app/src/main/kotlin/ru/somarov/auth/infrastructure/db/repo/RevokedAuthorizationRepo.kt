@@ -1,6 +1,7 @@
 package ru.somarov.auth.infrastructure.db.repo
 
 import ru.somarov.auth.infrastructure.db.DatabaseClient
+import ru.somarov.auth.infrastructure.db.entity.RevokedAuthorization
 import java.util.UUID
 
 class RevokedAuthorizationRepo(private val client: DatabaseClient) {
