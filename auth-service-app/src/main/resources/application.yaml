@@ -1,6 +1,6 @@
 ktor:
   deployment:
-    port: 8080
+    port: 8081
   application:
     modules:
       - ru.somarov.auth.infrastructure.config.ApplicationConfigKt.config
@@ -9,10 +9,10 @@ ktor:
   db:
     host: "$DB_HOST:localhost"
     port: "$DB_PORT:5432"
-    name: "$DB_NAME:auth_service"
+    name: "$DB_NAME:test"
     schema: "$DB_SCHEMA:auth_service"
-    user: "$DB_USER:auth_service"
-    password: "$DB_PASSWORD:auth_service"
+    user: "$DB_USER:test"
+    password: "$DB_PASSWORD:test"
     connection-timeout: "$DB_CONNECTION_TIMEOUT:PT5S"
     statement-timeout: "$DB_STATEMENT_TIMEOUT:PT5S"
     pool:

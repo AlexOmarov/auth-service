@@ -2,6 +2,7 @@ package ru.somarov.auth.infrastructure.db.repo
 
 import ru.somarov.auth.infrastructure.db.DatabaseClient
 import ru.somarov.auth.infrastructure.db.entity.Client
+import java.util.*
 
 class ClientRepo(private val client: DatabaseClient) {
     suspend fun findAll(): List<Client> {
@@ -9,6 +10,6 @@ class ClientRepo(private val client: DatabaseClient) {
     }
 
     fun save(client: Client): String {
-        TODO("Not yet implemented")
+        return UUID.randomUUID().toString()
     }
 }
