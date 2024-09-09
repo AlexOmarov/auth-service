@@ -34,7 +34,7 @@ class Decorator(private val input: RSocket, private val registry: ObservationReg
         return observation.observeSuspendedMono(coroutineContext = context) {
             val req = payload.deserialize(mapper)
             logger.info {
-                "Incoming rsocket request -> ${req.metadata[WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.name]}: " +
+                "Incoming rsocket request -> ${req.metadata[WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string]}: " +
                     "payload: ${req.body}, metadata: ${req.metadata}"
             }
 
@@ -42,7 +42,7 @@ class Decorator(private val input: RSocket, private val registry: ObservationReg
 
             val resp = result.deserialize(mapper)
             logger.info {
-                "Outgoing rsocket response <- ${resp.metadata[WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.name]}: " +
+                "Outgoing rsocket response <- ${resp.metadata[WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string]}: " +
                     "payload: ${resp.body}, metadata: ${resp.metadata}"
             }
 

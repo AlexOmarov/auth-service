@@ -35,6 +35,8 @@ fun setupObservability(props: AppProps): Pair<MeterRegistry, ObservationRegistry
     val sdk = createOpenTelemetrySdk(props)
     val buildProps = getBuildProperties()
 
+    // TODO: connect to metrics endpoint
+
     val meterRegistry = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM).also {
         it.config().commonTags(
             "application", props.name,
