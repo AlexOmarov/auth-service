@@ -1,7 +1,6 @@
 package ru.somarov.auth.infrastructure.rsocket.payload
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import io.netty.buffer.ByteBufAllocator
 import io.netty.buffer.ByteBufUtil.isText
@@ -32,10 +31,10 @@ fun io.rsocket.kotlin.payload.Payload.toJavaPayload(): Payload {
     return DefaultPayload.create(Unpooled.wrappedBuffer(data.readBytes()), metadata)
 }
 
-suspend fun Payload.toKotlinPayload(): io.rsocket.kotlin.payload.Payload {
+fun Payload.toKotlinPayload(): io.rsocket.kotlin.payload.Payload {
     return payload(
-        ByteReadChannel(this.data).readRemaining(),
-        ByteReadChannel(this.metadata).readRemaining()
+        buildPacket { writeFully(data) },
+        buildPacket { writeFully(metadata) }
     )
 }
 

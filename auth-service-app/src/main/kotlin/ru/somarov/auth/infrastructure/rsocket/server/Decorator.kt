@@ -14,7 +14,12 @@ import io.rsocket.micrometer.MicrometerRSocketInterceptor
 import io.rsocket.micrometer.observation.ObservationResponderRSocketProxy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactor.asFlux
 import kotlinx.coroutines.reactor.awaitSingle
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import ru.somarov.auth.infrastructure.observability.micrometer.observeSuspendedMono
 import ru.somarov.auth.infrastructure.rsocket.payload.deserialize
@@ -50,6 +55,30 @@ class Decorator(private val input: RSocket, private val registry: ObservationReg
         }.contextCapture()
     }
 
+    @ExperimentalMetadataApi
+    override fun requestStream(payload: io.rsocket.Payload): Flux<io.rsocket.Payload> {
+        val context = (Dispatchers.IO + input.coroutineContext).minusKey(Job().key)
+
+        val req = payload.deserialize(mapper)
+
+        logger.info {
+            "Incoming rsocket request -> ${req.metadata[WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string]}: " +
+                "payload: ${req.body}, metadata: ${req.metadata}"
+        }
+
+        val result = input.requestStream(payload.toKotlinPayload())
+
+        return result.map {
+            val payload = it.toJavaPayload()
+            val resp = payload.deserialize(mapper)
+            logger.info {
+                "Outgoing rsocket response <- ${resp.metadata[WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string]}: " +
+                    "payload: ${resp.body}, metadata: ${resp.metadata}"
+            }
+            payload
+        }.asFlux(context)
+    }
+
     companion object {
         @ExperimentalMetadataApi
         fun decorate(
@@ -71,6 +100,13 @@ class Decorator(private val input: RSocket, private val registry: ObservationReg
                         .contextCapture()
                         .awaitSingle()
                         .toKotlinPayload()
+                }
+
+                override fun requestStream(payload: Payload): Flow<Payload> {
+                    return enrichedJavaRSocket.requestStream(payload.toJavaPayload())
+                        .contextCapture()
+                        .map { it.toKotlinPayload() }
+                        .asFlow()
                 }
             }
         }

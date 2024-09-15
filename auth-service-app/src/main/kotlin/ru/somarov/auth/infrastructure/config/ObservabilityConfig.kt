@@ -1,43 +1,32 @@
 package ru.somarov.auth.infrastructure.config
 
-import io.ktor.server.application.Application
-import io.micrometer.core.instrument.Clock
+import io.ktor.server.application.*
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler
 import io.micrometer.observation.ObservationHandler
 import io.micrometer.observation.ObservationRegistry
-import io.micrometer.registry.otlp.OtlpConfig
-import io.micrometer.registry.otlp.OtlpMeterRegistry
 import io.micrometer.tracing.handler.DefaultTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingReceiverTracingObservationHandler
 import io.micrometer.tracing.handler.PropagatingSenderTracingObservationHandler
 import io.micrometer.tracing.handler.TracingAwareMeterObservationHandler
-import io.micrometer.tracing.otel.bridge.EventPublishingContextWrapper
-import io.micrometer.tracing.otel.bridge.OtelBaggageManager
-import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext
-import io.micrometer.tracing.otel.bridge.OtelPropagator
-import io.micrometer.tracing.otel.bridge.OtelTracer
-import io.micrometer.tracing.otel.bridge.Slf4JBaggageEventListener
-import io.micrometer.tracing.otel.bridge.Slf4JEventListener
+import io.micrometer.tracing.otel.bridge.*
 import io.opentelemetry.context.ContextStorage
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender
+import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry
 import io.rsocket.micrometer.observation.ByteBufGetter
 import io.rsocket.micrometer.observation.ByteBufSetter
 import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
 import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
 import ru.somarov.auth.infrastructure.observability.opentelemetry.createOpenTelemetrySdk
 import ru.somarov.auth.infrastructure.props.AppProps
-import java.util.Collections
-import java.util.Properties
+import java.util.*
 
 fun setupObservability(props: AppProps): Pair<MeterRegistry, ObservationRegistry> {
     val sdk = createOpenTelemetrySdk(props)
     val buildProps = getBuildProperties()
 
-    // TODO: connect to metrics endpoint
-
-    val meterRegistry = OtlpMeterRegistry(OtlpConfig.DEFAULT, Clock.SYSTEM).also {
+    val meterRegistry = OpenTelemetryMeterRegistry.create(sdk).also {
         it.config().commonTags(
             "application", props.name,
             "instance", props.instance

@@ -1,6 +1,5 @@
 package ru.somarov.auth.presentation.scheduler
 
-import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import net.javacrumbs.shedlock.core.LockConfiguration
 import ru.somarov.auth.infrastructure.scheduler.Scheduler
 import java.time.Duration
@@ -14,7 +13,7 @@ fun registerTasks(scheduler: Scheduler) {
         Duration.parse("PT1S"),
     )
 
-    scheduler.register(config) {
-        logger { }.info { "wow" }
-    }
+    /*    scheduler.register(config) {
+            logger { }.info { "wow" }
+        }*/
 }
