@@ -3,7 +3,7 @@ package ru.somarov.auth.tests.integration
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
-import ru.somarov.auth.tests.unit.execute
+import ru.somarov.auth.config.BaseIntegrationTest.execute
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

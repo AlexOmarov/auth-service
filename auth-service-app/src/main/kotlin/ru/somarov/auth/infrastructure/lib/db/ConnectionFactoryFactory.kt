@@ -1,107 +1,21 @@
-package ru.somarov.auth.infrastructure.db
+package ru.somarov.auth.infrastructure.lib.db
 
-import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Tags
-import io.micrometer.observation.ObservationRegistry
 import io.r2dbc.pool.ConnectionPool
 import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionFactory
-import io.r2dbc.postgresql.api.PostgresTransactionDefinition
-import io.r2dbc.spi.*
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirstOrNull
-import kotlinx.coroutines.reactive.awaitSingle
+import io.r2dbc.spi.ConnectionFactory
+import io.r2dbc.spi.ValidationDepth
 import org.flywaydb.core.Flyway
 import reactor.core.scheduler.Schedulers
-import ru.somarov.auth.infrastructure.props.AppProps
-import ru.somarov.auth.infrastructure.props.DbProps
+import ru.somarov.auth.infrastructure.lib.observability.ObservabilityRegistry
 import kotlin.time.toJavaDuration
 
-class DatabaseClient(props: AppProps, registry: MeterRegistry, observationRegistry: ObservationRegistry) {
-    private val logger = logger { }
-    val factory: ConnectionFactory = createFactory(props.db, registry, props.name)
-
-    @Suppress("kotlin:S6518", "TooGenericExceptionCaught") // Cannot replace with index accessor
-    suspend fun <T> execute(
-        query: String,
-        params: Map<String, String>,
-        mapper: (result: Row, metadata: RowMetadata) -> T
-    ): List<T> {
-        val connection = factory.create().awaitSingle()
-        val res = try {
-            val statement = connection.createStatement(query)
-            params.forEach { (key, value) -> statement.bind(key, value) }
-            statement.execute().asFlow()
-                .map { it.map { row, meta -> mapper(row, meta) }.awaitFirstOrNull() }.filterNotNull().toList()
-        } catch (e: Throwable) {
-            logger.error(e) {
-                "Got error while trying to perform sql query: query - " +
-                    "$query, params - $params, ex - ${e.message}"
-            }
-            throw e
-        } finally {
-            connection.close().awaitFirstOrNull()
-        }
-        return res
-    }
-
-    @Suppress("kotlin:S6518", "TooGenericExceptionCaught") // Cannot replace with index accessor
-    suspend fun <T> transactional(
-        query: String,
-        params: Map<String, String>,
-        isolationLevel: IsolationLevel = IsolationLevel.READ_COMMITTED,
-        mapper: (result: Row, metadata: RowMetadata) -> T
-    ): List<T> {
-        val connection = factory.create().awaitSingle()
-        val res = try {
-            connection.beginTransaction(PostgresTransactionDefinition.from(isolationLevel)).awaitFirstOrNull()
-            val statement = connection.createStatement(query)
-            params.forEach { (key, value) -> statement.bind(key, value) }
-            val result = statement.execute().asFlow()
-                .map { it.map { row, meta -> mapper(row, meta) }.awaitFirstOrNull() }.filterNotNull().toList()
-            connection.commitTransaction()
-            result
-        } catch (e: Throwable) {
-            logger.error(e) {
-                "Got error while trying to perform transactional sql query: query - " +
-                    "$query, params - $params, ex - ${e.message}"
-            }
-            throw e
-        } finally {
-            connection.commitTransaction()
-            connection.close().awaitFirstOrNull()
-        }
-        return res
-    }
-
-    @Suppress("kotlin:S6518", "TooGenericExceptionCaught") // Cannot replace with index accessor
-    suspend fun <T> transactional(
-        isolationLevel: IsolationLevel = IsolationLevel.READ_COMMITTED,
-        action: suspend (connection: Connection) -> T
-    ): T {
-        val connection = factory.create().awaitSingle()
-        val res = try {
-            connection.beginTransaction(PostgresTransactionDefinition.from(isolationLevel)).awaitSingle()
-            val result = action(connection)
-            connection.commitTransaction()
-            result
-        } catch (e: Throwable) {
-            logger.error(e) { "Got error while trying to perform transactional action" }
-            throw e
-        } finally {
-            connection.commitTransaction()
-            connection.close().awaitFirstOrNull()
-        }
-        return res
-    }
-
-    private fun createFactory(props: DbProps, registry: MeterRegistry, name: String): ConnectionFactory {
+object ConnectionFactoryFactory {
+    fun createFactory(props: DbProps, registry: ObservabilityRegistry, name: String): ConnectionFactory {
 
         val configuration = Flyway.configure()
             .dataSource(
@@ -152,7 +66,7 @@ class DatabaseClient(props: AppProps, registry: MeterRegistry, observationRegist
 
         @Suppress("SpreadOperator") // had to due to API of micrometer lib
         val tags = Tags.concat(Tags.empty(), *arrayOf("name", poolName))
-        bindToMeterRegistry(pool, registry, tags)
+        bindToMeterRegistry(pool, registry.meterRegistry, tags)
 
         return pool
     }

@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.scheduler
+package ru.somarov.auth.infrastructure.lib.scheduler
 
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
 import io.micrometer.observation.Observation
@@ -8,7 +8,7 @@ import kotlinx.coroutines.*
 import net.javacrumbs.shedlock.core.DefaultLockingTaskExecutor
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.provider.r2dbc.R2dbcLockProvider
-import ru.somarov.auth.infrastructure.observability.micrometer.observeAndAwait
+import ru.somarov.auth.infrastructure.lib.observability.micrometer.observeAndAwait
 import java.util.concurrent.CancellationException
 
 class Scheduler(factory: ConnectionFactory, private val registry: ObservationRegistry) {

@@ -4,8 +4,8 @@ import kotlinx.datetime.Clock.System.now
 import ru.somarov.auth.infrastructure.db.entity.Client
 import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.db.repo.RevokedAuthorizationRepo
-import ru.somarov.auth.infrastructure.kafka.Producer
-import ru.somarov.auth.infrastructure.util.generateRandomString
+import ru.somarov.auth.infrastructure.lib.kafka.Producer
+import ru.somarov.auth.infrastructure.lib.util.generateRandomString
 import ru.somarov.auth.presentation.event.Metadata
 import ru.somarov.auth.presentation.event.broadcast.RegistrationBroadcast
 import ru.somarov.auth.presentation.request.RegistrationRequest

@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.util
+package ru.somarov.auth.infrastructure.lib.util
 
 import java.util.*
 

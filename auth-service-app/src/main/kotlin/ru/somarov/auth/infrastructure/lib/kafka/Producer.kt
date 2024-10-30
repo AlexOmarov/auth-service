@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.kafka
+package ru.somarov.auth.infrastructure.lib.kafka
 
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.tracing.TraceContext
@@ -21,20 +21,21 @@ import reactor.kafka.sender.KafkaSender
 import reactor.kafka.sender.SenderOptions
 import reactor.kafka.sender.SenderRecord
 import reactor.kafka.sender.SenderResult
+import ru.somarov.auth.infrastructure.lib.util.generateRandomString
 import ru.somarov.auth.presentation.event.Metadata
-import java.util.UUID
 import kotlin.random.Random
+import kotlin.reflect.KClass
 
 class Producer<T : Any>(
     private val props: ProducerProps,
     private val registry: ObservationRegistry,
-    private val clazz: Class<T>,
+    private val clazz: KClass<T>,
 ) {
     private val log = LoggerFactory.getLogger(this.javaClass)
 
     private val sender = KafkaSender.create(createSenderOptions<T>())
 
-    suspend fun send(event: T, metadata: Metadata): SenderResult<UUID> {
+    suspend fun send(event: T, metadata: Metadata): SenderResult<String> {
         val partition = null
         val timestamp = null
         val traceParent = createTraceParentHeader()
@@ -52,7 +53,7 @@ class Producer<T : Any>(
             /* headers = */ headers
         )
 
-        val result = sender.send(Flux.just(SenderRecord.create(record, UUID.randomUUID())))
+        val result = sender.send(Flux.just(SenderRecord.create(record, generateRandomString())))
             .doOnError { e -> log.error("Send failed", e) }
             .asFlow()
             .first()
@@ -97,7 +98,7 @@ class Producer<T : Any>(
             .withValueSerializer { _, data ->
                 try {
                     Json.Default.encodeToString(
-                        Json.serializersModule.serializer(this.clazz) as KSerializer<T>,
+                        Json.serializersModule.serializer(clazz.java) as KSerializer<T>,
                         data
                     ).toByteArray()
                 } catch (e: Exception) {

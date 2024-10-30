@@ -1,7 +1,7 @@
 package ru.somarov.auth.presentation.scheduler
 
 import net.javacrumbs.shedlock.core.LockConfiguration
-import ru.somarov.auth.infrastructure.scheduler.Scheduler
+import ru.somarov.auth.infrastructure.lib.scheduler.Scheduler
 import java.time.Duration
 import java.time.Instant
 

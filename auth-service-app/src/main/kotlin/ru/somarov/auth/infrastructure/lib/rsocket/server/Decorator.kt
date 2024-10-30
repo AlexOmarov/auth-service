@@ -1,10 +1,9 @@
-package ru.somarov.auth.infrastructure.rsocket.server
+package ru.somarov.auth.infrastructure.lib.rsocket.server
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
-import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.observation.ObservationRegistry
 import io.rsocket.kotlin.ExperimentalMetadataApi
 import io.rsocket.kotlin.RSocket
@@ -21,10 +20,11 @@ import kotlinx.coroutines.reactor.asFlux
 import kotlinx.coroutines.reactor.awaitSingle
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import ru.somarov.auth.infrastructure.observability.micrometer.observeSuspendedMono
-import ru.somarov.auth.infrastructure.rsocket.payload.deserialize
-import ru.somarov.auth.infrastructure.rsocket.payload.toJavaPayload
-import ru.somarov.auth.infrastructure.rsocket.payload.toKotlinPayload
+import ru.somarov.auth.infrastructure.lib.observability.ObservabilityRegistry
+import ru.somarov.auth.infrastructure.lib.observability.micrometer.observeSuspendedAsMono
+import ru.somarov.auth.infrastructure.lib.util.deserialize
+import ru.somarov.auth.infrastructure.lib.util.toJavaPayload
+import ru.somarov.auth.infrastructure.lib.util.toKotlinPayload
 import kotlin.coroutines.CoroutineContext
 
 class Decorator(private val input: RSocket, private val registry: ObservationRegistry) : io.rsocket.RSocket {
@@ -36,7 +36,7 @@ class Decorator(private val input: RSocket, private val registry: ObservationReg
         val context = (Dispatchers.IO + input.coroutineContext).minusKey(Job().key)
         val observation = registry.currentObservation!!
 
-        return observation.observeSuspendedMono(coroutineContext = context) {
+        return observation.observeSuspendedAsMono(coroutineContext = context) {
             val req = payload.deserialize(mapper)
             logger.info {
                 "Incoming rsocket request -> ${req.metadata[WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.string]}: " +
@@ -83,13 +83,13 @@ class Decorator(private val input: RSocket, private val registry: ObservationReg
         @ExperimentalMetadataApi
         fun decorate(
             input: RSocket,
-            observationRegistry: ObservationRegistry,
-            meterRegistry: MeterRegistry
+            registry: ObservabilityRegistry
         ): RSocket {
             val enrichedJavaRSocket = ObservationResponderRSocketProxy(
                 @Suppress
-                MicrometerRSocketInterceptor(meterRegistry).apply(Decorator(input, observationRegistry)),
-                observationRegistry
+                MicrometerRSocketInterceptor(registry.meterRegistry)
+                    .apply(Decorator(input, registry.observationRegistry)),
+                registry.observationRegistry
             )
             return object : RSocket {
                 override val coroutineContext: CoroutineContext

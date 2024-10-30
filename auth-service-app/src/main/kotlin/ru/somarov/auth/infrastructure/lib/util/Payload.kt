@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.rsocket.payload
+package ru.somarov.auth.infrastructure.lib.util
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.ktor.utils.io.core.*
@@ -13,11 +13,10 @@ import io.rsocket.metadata.CompositeMetadata
 import io.rsocket.metadata.CompositeMetadataCodec
 import io.rsocket.util.DefaultPayload
 import java.nio.charset.Charset
-import java.util.*
 import io.rsocket.kotlin.payload.Payload as payload
 
 @ExperimentalMetadataApi
-fun io.rsocket.kotlin.payload.Payload.toJavaPayload(): Payload {
+fun payload.toJavaPayload(): Payload {
     val metadata = ByteBufAllocator.DEFAULT.compositeBuffer()
     this.metadata?.copy()?.read(BufferPool.Default)?.entries?.forEach {
         CompositeMetadataCodec.encodeAndAddMetadata(
@@ -31,7 +30,7 @@ fun io.rsocket.kotlin.payload.Payload.toJavaPayload(): Payload {
     return DefaultPayload.create(Unpooled.wrappedBuffer(data.readBytes()), metadata)
 }
 
-fun Payload.toKotlinPayload(): io.rsocket.kotlin.payload.Payload {
+fun Payload.toKotlinPayload(): payload {
     return payload(
         buildPacket { writeFully(data) },
         buildPacket { writeFully(metadata) }
@@ -43,7 +42,7 @@ fun Payload.deserialize(mapper: ObjectMapper): Message {
     val encoding = Charset.forName("UTF8")
     val metadata = CompositeMetadata(Unpooled.wrappedBuffer(this.metadata), false)
         .associate {
-            (it.mimeType ?: "Unknown mime type ${UUID.randomUUID()}") to
+            (it.mimeType ?: "Unknown mime type") to
                 if (isText(it.content, encoding)) it.content.toString(encoding) else "Not text"
         }
 

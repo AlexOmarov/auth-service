@@ -12,25 +12,25 @@ import io.rsocket.kotlin.ktor.server.RSocketSupport
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import ru.somarov.auth.application.service.Service
-import ru.somarov.auth.infrastructure.db.DatabaseClient
+import ru.somarov.auth.infrastructure.lib.db.DatabaseClient
 import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.db.repo.RevokedAuthorizationRepo
-import ru.somarov.auth.infrastructure.kafka.Producer
+import ru.somarov.auth.infrastructure.lib.db.ConnectionFactoryFactory
+import ru.somarov.auth.infrastructure.lib.kafka.Producer
+import ru.somarov.auth.infrastructure.lib.observability.ObservabilityRegistryFactory
 import ru.somarov.auth.infrastructure.props.AppProps
 import ru.somarov.auth.presentation.event.broadcast.RegistrationBroadcast
 import ru.somarov.auth.presentation.http.healthcheck
 import ru.somarov.auth.presentation.rsocket.authSocket
-import java.util.*
 
 @Suppress("unused") // Referenced in application.yaml
 @ExperimentalSerializationApi
 internal fun Application.config() {
-    TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
-
     val props = AppProps.parse(environment)
     val cbor = Cbor { ignoreUnknownKeys = true }
-    val (meterRegistry, observationRegistry) = setupObservability(props)
-    val dbClient = DatabaseClient(props, meterRegistry, observationRegistry)
+    val registry = ObservabilityRegistryFactory.create(props.monitoring)
+    val factory = ConnectionFactoryFactory.createFactory(props.db, registry, "name")
+    val dbClient = DatabaseClient(factory)
     val clientRepo = ClientRepo(dbClient)
     val revokedAuthorizationRepo = RevokedAuthorizationRepo(dbClient)
     val registrationBroadcastProducer = Producer(
@@ -38,17 +38,17 @@ internal fun Application.config() {
             props.kafka.brokers,
             props.kafka.producers.registration.maxInFlight,
             props.kafka.producers.registration.topic
-        ), observationRegistry, RegistrationBroadcast::class.java
+        ), registry.observationRegistry, RegistrationBroadcast::class
     )
     val service = Service(clientRepo, registrationBroadcastProducer, revokedAuthorizationRepo)
-    setupScheduler(dbClient.factory, observationRegistry, environment)
+    setupScheduler(factory, registry.observationRegistry, environment)
 
     install(ContentNegotiation) { cbor(cbor) }
     install(RequestValidation) { setupValidation(this) }
     install(StatusPages) { setupExceptionHandling(this) }
-    install(MicrometerMetrics) { setupMetrics(this, meterRegistry) }
+    install(MicrometerMetrics) { setupMetrics(this, registry.meterRegistry) }
     install(WebSockets)
-    install(RSocketSupport) { server { setupRSocketServer(this, meterRegistry, observationRegistry) } }
+    install(RSocketSupport) { server { setupRSocketServer(this, registry) } }
 
     routing {
         healthcheck()

@@ -5,10 +5,6 @@ plugins {
     `maven-publish`
 }
 
-detekt {
-    config.setFrom(files("$rootDir/detekt-config.yml"))
-}
-
 dependencies {
     detektPlugins(libs.detekt.ktlint)
 

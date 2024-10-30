@@ -5,4 +5,4 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 @Schema(description = "Object which holds details of error which has been thrown")
-data class ErrorResponse(val details: Map<String, String>) : java.io.Serializable
+data class ErrorResponse(val details: Map<String, String>)

@@ -1,4 +1,4 @@
-package ru.somarov.auth.infrastructure.props
+package ru.somarov.auth.infrastructure.lib.kafka
 
 import io.ktor.server.application.*
 

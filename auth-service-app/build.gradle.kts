@@ -9,10 +9,6 @@ plugins {
     alias(libs.plugins.kover)
 }
 
-detekt {
-    config.setFrom(files("$rootDir/detekt-config.yml"))
-}
-
 dependencies {
     detektPlugins(libs.detekt.ktlint)
 
@@ -33,14 +29,6 @@ dependencies {
     implementation(libs.jwt)
 
     testImplementation(libs.bundles.test)
-}
-
-configurations.matching { it.name == "detekt" }.all {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "org.jetbrains.kotlin") {
-            useVersion(io.gitlab.arturbosch.detekt.getSupportedKotlinVersion())
-        }
-    }
 }
 
 application {
@@ -64,24 +52,19 @@ tasks.register("generateBuildInfo") {
     description = "Generates build-info.properties file with build metadata."
 
     doLast {
-        val buildInfoFile =
-            file("${layout.buildDirectory.asFile.get().path}/resources/main/META-INF/build-info.properties")
-        buildInfoFile.parentFile.mkdirs()
-        buildInfoFile.writeText(
+        val file = file("${layout.buildDirectory.asFile.get().path}/resources/main/META-INF/build-info.properties")
+        file.parentFile.mkdirs()
+        file.writeText(
             """
-            build.version=${project.version}
-            build.group=${project.group}
-            build.artifact=${project.name}
-        """.trimIndent()
+                build.version=${project.version}
+                build.group=${project.group}
+                build.artifact=${project.name}
+            """.trimIndent()
         )
     }
 }
 
 tasks.named("jar") {
-    dependsOn("generateBuildInfo")
-}
-
-tasks.named("buildFatJar") {
     dependsOn("generateBuildInfo")
 }
 

@@ -1,6 +1,6 @@
 package ru.somarov.auth.infrastructure.db.repo
 
-import ru.somarov.auth.infrastructure.db.DatabaseClient
+import ru.somarov.auth.infrastructure.lib.db.DatabaseClient
 import ru.somarov.auth.infrastructure.db.entity.RevokedAuthorization
 
 class RevokedAuthorizationRepo(private val client: DatabaseClient) {
