@@ -14,9 +14,9 @@ data class BuildProps(
                 Application::class.java.getResourceAsStream(path)?.use { props.load(it) }
             }
             return BuildProps(
-                version = load.getProperty("build.version", "undefined"),
-                group = load.getProperty("build.group", "undefined"),
-                artifact = load.getProperty("build.artifact", "undefined")
+                version = load.getProperty("build.version", "0.0.0"),
+                group = load.getProperty("build.group", "undefined_build_group"),
+                artifact = load.getProperty("build.artifact", "undefined_artifact")
             )
         }
     }

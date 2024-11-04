@@ -3,9 +3,22 @@ ktor:
     port: 8082
   application:
     modules:
-      - ru.somarov.auth.infrastructure.config.ApplicationConfigKt.config
-  name: "$APP_NAME:auth-service"
-  instance: "$HOSTNAME:undefined"
+      - ru.somarov.auth.infrastructure.AppConfigKt.config
+  environment:
+    timezone: "UTC"
+  monitoring:
+    name: "$APP_NAME:auth-service"
+    instance: "$HOSTNAME:undefined"
+    build-props-path: "/META-INF/build-info.properties"
+    protocol: "http"
+    host: "$OTEL_HOST:localhost"
+    logs:
+      port: "4317"
+    metrics:
+      port: "4318"
+    tracing:
+      port: "4319"
+      probability: "1.0"
   db:
     host: "$DB_HOST:localhost"
     port: "$DB_PORT:5432"
@@ -36,10 +49,3 @@ ktor:
         enabled: "$KAFKA_REGISTRATION_ENABLED:false"
         topic: "auth_service_registration_broadcast"
         max-in-flight: "1"
-  otel:
-    protocol: "http"
-    host: "$OTEL_HOST:localhost"
-    logs-port: "4317"
-    metrics-port: "4318"
-    tracing-port: "4319"
-    tracing-probability: "1.0"

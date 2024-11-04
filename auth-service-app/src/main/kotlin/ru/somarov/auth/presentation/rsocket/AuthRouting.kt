@@ -8,6 +8,7 @@ import io.rsocket.kotlin.payload.buildPayload
 import io.rsocket.kotlin.payload.data
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
+import kotlinx.io.readByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
@@ -20,10 +21,11 @@ import ru.somarov.auth.presentation.response.ValidationResponse
 
 @OptIn(ExperimentalSerializationApi::class)
 internal fun Routing.authSocket(service: Service) {
+
     rSocket("validate") {
         RSocketRequestHandler {
             requestResponse {
-                val req = Cbor.Default.decodeFromByteArray<ValidationRequest>(it.data.readBytes())
+                val req = Cbor.Default.decodeFromByteArray<ValidationRequest>(it.data.readByteArray())
                 val result = service.validate(req)
                 buildPayload {
                     data { writePacket(ByteReadPacket(Cbor.Default.encodeToByteArray(ValidationResponse(result)))) }
@@ -35,7 +37,7 @@ internal fun Routing.authSocket(service: Service) {
     rSocket("register") {
         RSocketRequestHandler {
             requestResponse {
-                val req = Cbor.Default.decodeFromByteArray<RegistrationRequest>(it.data.readBytes())
+                val req = Cbor.Default.decodeFromByteArray<RegistrationRequest>(it.data.readByteArray())
                 val result = service.register(req)
                 buildPayload {
                     data { writePacket(ByteReadPacket(Cbor.Default.encodeToByteArray(RegistrationResponse(result)))) }
@@ -43,7 +45,7 @@ internal fun Routing.authSocket(service: Service) {
             }
 
             requestStream {
-                val req = Cbor.Default.decodeFromByteArray<RegistrationRequest>(it.data.readBytes())
+                val req = Cbor.Default.decodeFromByteArray<RegistrationRequest>(it.data.readByteArray())
                 val result = service.register(req)
                 val response = Cbor.Default.encodeToByteArray(RegistrationResponse(result))
                 flow {

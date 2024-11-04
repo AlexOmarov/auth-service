@@ -31,16 +31,6 @@ dependencies {
     testImplementation(libs.bundles.test)
 }
 
-application {
-    mainClass.set("ru.somarov.auth.AppKt")
-}
-
-ktor {
-    fatJar {
-        archiveFileName.set("app.jar")
-    }
-}
-
 tasks {
     shadowJar {
         mergeServiceFiles() // for micrometer reactor context propagation
@@ -80,6 +70,20 @@ tasks.withType<Test> {
         showExceptions = true
         showCauses = true
         showStackTraces = true
+    }
+}
+
+detekt {
+    config.setFrom(files("$rootDir/detekt-config.yml"))
+}
+
+application {
+    mainClass.set("ru.somarov.auth.AppKt")
+}
+
+ktor {
+    fatJar {
+        archiveFileName.set("app.jar")
     }
 }
 

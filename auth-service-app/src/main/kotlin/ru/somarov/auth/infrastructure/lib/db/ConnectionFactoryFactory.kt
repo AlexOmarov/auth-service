@@ -7,7 +7,6 @@ import io.r2dbc.pool.ConnectionPool
 import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration
 import io.r2dbc.postgresql.PostgresqlConnectionFactory
-import io.r2dbc.spi.ConnectionFactory
 import io.r2dbc.spi.ValidationDepth
 import org.flywaydb.core.Flyway
 import reactor.core.scheduler.Schedulers
@@ -15,8 +14,7 @@ import ru.somarov.auth.infrastructure.lib.observability.ObservabilityRegistry
 import kotlin.time.toJavaDuration
 
 object ConnectionFactoryFactory {
-    fun createFactory(props: DbProps, registry: ObservabilityRegistry, name: String): ConnectionFactory {
-
+    fun createFactory(props: DbProps, registry: ObservabilityRegistry, name: String): ConnectionPool {
         val configuration = Flyway.configure()
             .dataSource(
                 "jdbc:postgresql://${props.host}:${props.port}/${props.name}?" +

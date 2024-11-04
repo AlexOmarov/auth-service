@@ -33,3 +33,8 @@ publishing {
         }
     }
 }
+
+detekt {
+    config.setFrom(files("$rootDir/detekt-config.yml"))
+}
+

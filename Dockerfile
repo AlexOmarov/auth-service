@@ -1,3 +1,4 @@
+# todo: put 23 when kotlin and detekt will support it
 FROM bellsoft/liberica-runtime-container:jre-21-crac-slim-glibc
 
 RUN addgroup --system --gid 800 appuser && adduser --system --uid 800 appuser

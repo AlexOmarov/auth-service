@@ -12,6 +12,7 @@ import io.rsocket.kotlin.metadata.CompositeMetadata.Reader.read
 import io.rsocket.metadata.CompositeMetadata
 import io.rsocket.metadata.CompositeMetadataCodec
 import io.rsocket.util.DefaultPayload
+import kotlinx.io.readByteArray
 import java.nio.charset.Charset
 import io.rsocket.kotlin.payload.Payload as payload
 
@@ -23,11 +24,11 @@ fun payload.toJavaPayload(): Payload {
             /* compositeMetaData = */ metadata,
             /* allocator = */ ByteBufAllocator.DEFAULT,
             /* customMimeType = */ it.mimeType.toString(),
-            /* metadata = */ Unpooled.wrappedBuffer(it.content.readBytes())
+            /* metadata = */ Unpooled.wrappedBuffer(it.content.readByteArray())
         )
     }
 
-    return DefaultPayload.create(Unpooled.wrappedBuffer(data.readBytes()), metadata)
+    return DefaultPayload.create(Unpooled.wrappedBuffer(data.readByteArray()), metadata)
 }
 
 fun Payload.toKotlinPayload(): payload {

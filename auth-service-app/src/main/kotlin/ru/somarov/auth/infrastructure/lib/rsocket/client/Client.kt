@@ -2,8 +2,6 @@ package ru.somarov.auth.infrastructure.lib.rsocket.client
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging.logger
-import io.ktor.utils.io.core.ByteReadPacket
-import io.ktor.utils.io.core.readBytes
 import io.rsocket.kotlin.ExperimentalMetadataApi
 import io.rsocket.kotlin.RSocket
 import io.rsocket.kotlin.payload.Payload
@@ -20,6 +18,8 @@ import kotlinx.coroutines.reactor.asFlux
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.withContext
+import kotlinx.io.Source
+import kotlinx.io.readByteArray
 import reactor.core.publisher.Mono
 import ru.somarov.auth.infrastructure.lib.observability.ObservabilityRegistry
 import ru.somarov.auth.infrastructure.lib.util.deserialize
@@ -98,8 +98,8 @@ class Client(
             .map { it.toKotlinPayload() }
     }
 
-    override suspend fun metadataPush(metadata: ByteReadPacket) {
-        val payload = ByteBufPayload.create(ByteArray(0), metadata.readBytes())
+    override suspend fun metadataPush(metadata: Source) {
+        val payload = ByteBufPayload.create(ByteArray(0), metadata.readByteArray())
         logger.info { createMessage("Outgoing RS metadata <-", payload) }
         client.metadataPush(Mono.just(payload))
             .contextCapture()
