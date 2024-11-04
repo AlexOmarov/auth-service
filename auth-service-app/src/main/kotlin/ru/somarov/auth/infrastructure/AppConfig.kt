@@ -44,7 +44,7 @@ internal fun Application.config() {
         registry.observationRegistry,
         RegistrationBroadcast::class
     )
-    val service = Service(clientRepo, registrationBroadcastProducer, revokedAuthorizationRepo)
+    Service(clientRepo, registrationBroadcastProducer, revokedAuthorizationRepo)
     setupScheduler(factory, registry.observationRegistry, this)
 
     install(ContentNegotiation) { cbor(cbor) }
@@ -52,12 +52,7 @@ internal fun Application.config() {
     install(StatusPages) { setupExceptionHandling(this) }
     install(MicrometerMetrics) { setupMetrics(this, registry.meterRegistry) }
     install(WebSockets)
-    // TODO: uncomment when new version of rsocket kotlin will be released
-    // install(RSocketSupport) { server { setupRSocketServer(this, registry) } }
-
     routing {
         healthcheck()
-        // TODO: uncomment when new version of rsocket kotlin will be released
-        // authSocket(service)
     }
 }
