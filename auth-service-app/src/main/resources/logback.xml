@@ -30,6 +30,13 @@
                     </throwableConverter>
                 </stackTrace>
             </providers>
+            <jsonGeneratorDecorator class="net.logstash.logback.mask.MaskingJsonGeneratorDecorator">
+                <valueMasker class="ru.somarov.auth.infrastructure.lib.logging.Masker" >
+                    <parameters>
+                        <fields>${FIELD_MASK_LIST:-}</fields>
+                    </parameters>
+                </valueMasker>
+            </jsonGeneratorDecorator>
         </encoder>
     </appender>
     <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender"/>
