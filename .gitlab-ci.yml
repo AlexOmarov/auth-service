@@ -1,0 +1,53 @@
+stages:
+  - notify
+  - build
+  - scan
+  - notify_completion
+
+variables:
+  GRADLE_VERSION: "8.10.2"
+  JAVA_VERSION: "21"
+  SONAR_HOST_URL: "https://sonarcloud.io"
+
+before_script:
+  - echo "Setting up Java and Gradle"
+  - apt-get update && apt-get install -y wget unzip
+  - wget https://downloads.gradle-dn.com/distributions/gradle-$GRADLE_VERSION-bin.zip
+  - unzip gradle-$GRADLE_VERSION-bin.zip -d /opt
+  - export PATH=$PATH:/opt/gradle-$GRADLE_VERSION/bin
+  - wget https://github.com/AdoptOpenJDK/AdoptOpenJDK/releases/download/jdk-$JAVA_VERSION%2B0/OpenJDKJDK$JAVA_VERSION_linux-x64_bin.tar.gz
+  - tar -xzf OpenJDKJDK$JAVA_VERSION_linux-x64_bin.tar.gz
+  - mv jdk$JAVA_VERSION /usr/lib/jvm/
+  - export JAVA_HOME=/usr/lib/jvm/jdk$JAVA_VERSION
+  - export PATH=$JAVA_HOME/bin:$PATH
+
+notify_push:
+  stage: notify
+  script:
+    - echo "Sending notification to Telegram"
+    - >
+      curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" 
+      -d "chat_id=${TELEGRAM_TO}" 
+      -d "text=${GITLAB_USER_NAME} -> ${CI_PROJECT_PATH}\n\n${CI_COMMIT_MESSAGE}\n\n*Starting*\n\nSee changes: ${CI_REPOSITORY_URL}/commit/${CI_COMMIT_SHA}" 
+      -d "parse_mode=Markdown"
+
+build_and_test:
+  stage: build
+  script:
+    - ./gradlew build
+
+scan:
+  stage: scan
+  script:
+    - ./gradlew sonar -D"sonar.host.url=$SONAR_HOST_URL" -D"sonar.token=${SONAR_TOKEN}" -D"sonar.projectKey=${SONAR_PROJECT_KEY}" -D"sonar.organization=${SONAR_ORG}"
+
+notify_completion:
+  stage: notify_completion
+  script:
+    - echo "Sending completion notification to Telegram"
+    - >
+      curl -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" 
+      -d "chat_id=${TELEGRAM_TO}" 
+      -d "text=${GITLAB_USER_NAME} -> ${CI_PROJECT_PATH}\n\n${CI_COMMIT_MESSAGE}\n\n*${CI_JOB_STATUS}*\n\nSee changes: ${CI_REPOSITORY_URL}/commit/${CI_COMMIT_SHA}" 
+      -d "parse_mode=Markdown"
+  when: always
