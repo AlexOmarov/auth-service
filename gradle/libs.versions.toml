@@ -25,6 +25,10 @@ postgresql = "42.7.4"
 r2dbc-pool = "1.0.2.RELEASE"
 r2dbc-postgresql = "1.0.7.RELEASE"
 reactor-pool = "1.0.8"
+rsocket-micrometer = "1.1.4"
+rsocket = "0.16.0"
+rsocket-transport-ktor = "0.15.4"
+rsocket-transport-netty = "1.1.4"
 shedlock = "5.16.0"
 sonarqube = "5.1.0.4882"
 swagger-annotations = "2.2.25"
@@ -75,6 +79,12 @@ postgresql = { group = "org.postgresql", name = "postgresql", version.ref = "pos
 r2dbc-pool = { group = "io.r2dbc", name = "r2dbc-pool", version.ref = "r2dbc-pool" }
 r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
 reactor-pool = { group = "io.projectreactor.addons", name = "reactor-pool", version.ref = "reactor-pool" }
+rsocket-core = { group = "io.rsocket.kotlin", name = "rsocket-core", version.ref = "rsocket" }
+rsocket-ktor-client = { group = "io.rsocket.kotlin", name = "rsocket-ktor-client", version.ref = "rsocket" }
+rsocket-ktor-server = { group = "io.rsocket.kotlin", name = "rsocket-ktor-server", version.ref = "rsocket" }
+rsocket-transport-ktor = { group = "io.rsocket.kotlin", name = "rsocket-transport-ktor", version.ref = "rsocket-transport-ktor" }
+rsocket-transport-netty = { group = "io.rsocket", name = "rsocket-transport-netty", version.ref = "rsocket-transport-netty" }
+rsocket-micrometer = { module = "io.rsocket:rsocket-micrometer", version.ref = "rsocket-micrometer" }
 shedlock-core = { group = "net.javacrumbs.shedlock", name = "shedlock-core", version.ref = "shedlock" }
 shedlock-provider-r2dbc = { group = "net.javacrumbs.shedlock", name = "shedlock-provider-r2dbc", version.ref = "shedlock" }
 swagger-annotations = { group = "io.swagger.core.v3", name = "swagger-annotations", version.ref = "swagger-annotations" }
@@ -106,6 +116,16 @@ micrometer = ["micrometer", "micrometer-reactor", "micrometer-tracing", "microme
 postgres = ["flyway-postgres", "postgresql", "testcontainers-postgres", "r2dbc-postgresql"]
 
 redis = ["testcontainers-redis"]
+
+rsocket = [
+    "rsocket-core",
+    "rsocket-micrometer",
+    "rsocket-ktor-client",
+    "rsocket-ktor-server",
+    "rsocket-transport-ktor",
+    "rsocket-transport-netty"
+]
+
 
 shedlock = ["shedlock-core", "shedlock-provider-r2dbc"]
 

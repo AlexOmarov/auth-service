@@ -15,6 +15,9 @@ import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.observation.ObservationRegistry
 import io.r2dbc.spi.ConnectionFactory
+import io.rsocket.kotlin.core.RSocketServerBuilder
+import ru.somarov.auth.infrastructure.lib.observability.ObservabilityRegistry
+import ru.somarov.auth.infrastructure.lib.rsocket.server.Interceptor
 import ru.somarov.auth.infrastructure.lib.scheduler.Scheduler
 import ru.somarov.auth.presentation.request.ValidationRequest
 import ru.somarov.auth.presentation.response.ErrorResponse
@@ -36,6 +39,15 @@ fun setupScheduler(factory: ConnectionFactory, registry: ObservationRegistry, ap
 
     app.monitor.subscribe(ApplicationStopped) {
         scheduler.stop()
+    }
+}
+
+fun setupRSocketServer(
+    builder: RSocketServerBuilder,
+    registry: ObservabilityRegistry
+) {
+    builder.interceptors {
+        forResponder(Interceptor(registry))
     }
 }
 

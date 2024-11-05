@@ -21,6 +21,7 @@ dependencies {
     implementation(libs.bundles.micrometer)
     implementation(libs.bundles.postgres)
     implementation(libs.bundles.redis)
+    implementation(libs.bundles.rsocket)
     implementation(libs.bundles.shedlock)
     implementation(libs.bundles.web)
 

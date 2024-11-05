@@ -21,6 +21,10 @@ import io.opentelemetry.context.ContextStorage
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender
 import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry
 import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.rsocket.micrometer.observation.ByteBufGetter
+import io.rsocket.micrometer.observation.ByteBufSetter
+import io.rsocket.micrometer.observation.RSocketRequesterTracingObservationHandler
+import io.rsocket.micrometer.observation.RSocketResponderTracingObservationHandler
 import ru.somarov.auth.infrastructure.lib.observability.opentelemetry.OpenTelemetrySdkFactory
 import ru.somarov.auth.infrastructure.lib.observability.props.OtelProps
 
@@ -45,6 +49,9 @@ object ObservabilityRegistryFactory {
         val registry = ObservationRegistry.create()
 
         val propagationHandler = ObservationHandler.FirstMatchingCompositeObservationHandler(
+            RSocketRequesterTracingObservationHandler(tracerWrapper, propagator, ByteBufSetter(), false),
+            // RSocketResponderTracingObservationHandler onstart cleans traceparent for some reason
+            RSocketResponderTracingObservationHandler(tracerWrapper, propagator, ByteBufGetter(), false),
             PropagatingReceiverTracingObservationHandler(tracerWrapper, propagator),
             PropagatingSenderTracingObservationHandler(tracerWrapper, propagator),
             DefaultTracingObservationHandler(tracerWrapper)
