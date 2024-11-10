@@ -60,7 +60,7 @@ internal fun Application.config() {
         AuthorizationCodeIssuingBroadcast::class
     )
 
-    val authenticationService = AuthenticationService(clientRepo, JwtService(props.auth), registrationBroadcastProducer, authBroadcastProducer, keyDbClient)
+    val authenticationService = AuthenticationService(JwtService(props.auth), keyDbClient)
     setupScheduler(factory, registry.observationRegistry, this)
 
     install(ContentNegotiation) { cbor(cbor) }
