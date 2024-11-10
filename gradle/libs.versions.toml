@@ -3,6 +3,7 @@ detekt = "1.23.7"
 flyway = "10.20.1"
 jackson = "2.18.1"
 jwt = "4.4.0"
+lettuce = "6.5.0.RELEASE"
 kafka = "1.3.23"
 kompendium = "4.0.1"
 kotlin = "2.0.21"
@@ -41,6 +42,8 @@ detekt-ktlint = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatti
 flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref = "flyway" }
 flyway-postgres = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref = "flyway" }
 jwt = { module = "com.auth0:java-jwt", version.ref = "jwt" }
+lettuce = { module = "io.lettuce:lettuce-core", version.ref = "lettuce" }
+
 kafka = { module = "io.projectreactor.kafka:reactor-kafka", version.ref = "kafka" }
 kompendium = { group = "io.bkbn", name = "kompendium-core", version.ref = "kompendium" }
 kotlin-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor", version.ref = "kotlin-reactor" }
@@ -116,7 +119,7 @@ micrometer = ["micrometer", "micrometer-reactor", "micrometer-tracing", "microme
 
 postgres = ["flyway-postgres", "postgresql", "testcontainers-postgres", "r2dbc-postgresql"]
 
-redis = ["testcontainers-redis"]
+redis = ["lettuce", "testcontainers-redis"]
 
 rsocket = [
     "rsocket-core",

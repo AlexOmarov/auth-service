@@ -15,6 +15,8 @@ class JwtHandler(private val config: TokenConfig) {
 
     fun generate(userId: String): String {
         return JWT.create()
+            .withIssuer(config.issuer)
+            .withAudience(config.audience)
             .withSubject(userId)
             .withIssuedAt(Date())
             .withExpiresAt(Date(System.currentTimeMillis() + config.durationMillis))

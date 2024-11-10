@@ -8,6 +8,7 @@ data class KafkaProps(
 ) {
     data class KafkaProducersProps(
         val registration: KafkaProducerProps,
+        val auth: KafkaProducerProps,
         val dlq: KafkaProducerProps,
         val retry: KafkaProducerProps
     )
@@ -46,6 +47,15 @@ data class KafkaProps(
                         topic = environment.config.property("ktor.kafka.producers.registration.topic")
                             .getString(),
                         maxInFlight = environment.config.property("ktor.kafka.producers.registration.max-in-flight")
+                            .getString().toInt()
+
+                    ),
+                    auth = KafkaProducerProps(
+                        enabled = environment.config.property("ktor.kafka.producers.auth.enabled")
+                            .getString().toBoolean(),
+                        topic = environment.config.property("ktor.kafka.producers.auth.topic")
+                            .getString(),
+                        maxInFlight = environment.config.property("ktor.kafka.producers.auth.max-in-flight")
                             .getString().toInt()
 
                     )

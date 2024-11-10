@@ -34,6 +34,8 @@ ktor:
       max-idle-time: "$DB_POOL_MAX_IDLE_TIME:PT1M"
       max-life-time: "$DB_POOL_MAX_LIFE_TIME:PT1M"
       validation-query: "$DB_POOL_VALIDATION_QUERY:SELECT 1"
+  keydb:
+    host: "KEYDB_HOST:redis://localhost:6379"
   kafka:
     brokers: "$KAFKA_BROKERS:localhost:9092"
     producers:
@@ -48,4 +50,8 @@ ktor:
       registration:
         enabled: "$KAFKA_REGISTRATION_ENABLED:false"
         topic: "auth_service_registration_broadcast"
+        max-in-flight: "1"
+      auth:
+        enabled: "$KAFKA_AU_ENABLED:false"
+        topic: "auth_service_auth_broadcast"
         max-in-flight: "1"

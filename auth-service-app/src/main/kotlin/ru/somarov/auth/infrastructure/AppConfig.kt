@@ -11,13 +11,15 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
-import ru.somarov.auth.application.service.Service
+import ru.somarov.auth.application.service.AuthenticationService
 import ru.somarov.auth.infrastructure.db.repo.ClientRepo
 import ru.somarov.auth.infrastructure.lib.db.ConnectionFactoryFactory
 import ru.somarov.auth.infrastructure.lib.db.DatabaseClient
 import ru.somarov.auth.infrastructure.lib.oid.JwtService
 import ru.somarov.auth.infrastructure.lib.kafka.Producer
+import ru.somarov.auth.infrastructure.lib.keydb.KeyDbClient
 import ru.somarov.auth.infrastructure.lib.observability.ObservabilityRegistryFactory
+import ru.somarov.auth.presentation.event.broadcast.AuthorizationCodeIssuingBroadcast
 import ru.somarov.auth.presentation.event.broadcast.RegistrationBroadcast
 import ru.somarov.auth.presentation.http.healthcheck
 
@@ -35,6 +37,9 @@ internal fun Application.config() {
 
     val dbClient = DatabaseClient(factory)
     val clientRepo = ClientRepo(dbClient)
+
+    val keyDbClient = KeyDbClient(props.cache)
+
     val registrationBroadcastProducer = Producer(
         Producer.ProducerProps(
             props.kafka.brokers,
@@ -45,7 +50,17 @@ internal fun Application.config() {
         RegistrationBroadcast::class
     )
 
-    val service = Service(clientRepo, JwtService(props.auth), registrationBroadcastProducer)
+    val authBroadcastProducer = Producer(
+        Producer.ProducerProps(
+            props.kafka.brokers,
+            props.kafka.producers.auth.maxInFlight,
+            props.kafka.producers.auth.topic
+        ),
+        registry.observationRegistry,
+        AuthorizationCodeIssuingBroadcast::class
+    )
+
+    val authenticationService = AuthenticationService(clientRepo, JwtService(props.auth), registrationBroadcastProducer, authBroadcastProducer, keyDbClient)
     setupScheduler(factory, registry.observationRegistry, this)
 
     install(ContentNegotiation) { cbor(cbor) }

@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 data class TokenResponse(
     val accessToken: String,
     val refreshToken: String,
-    val idToken: String
+    val idToken: String?
 )

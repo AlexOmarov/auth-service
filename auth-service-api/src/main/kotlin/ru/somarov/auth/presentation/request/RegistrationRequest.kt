@@ -7,5 +7,6 @@ import kotlinx.serialization.Serializable
 @Schema(description = "Object which holds registration request data")
 data class RegistrationRequest(
     val email: String,
-    val password: String
+    val password: String,
+    val tenantId: String,
 )

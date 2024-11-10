@@ -8,7 +8,12 @@ import java.security.interfaces.RSAKey
 import java.security.spec.PKCS8EncodedKeySpec
 
 data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val oid: TokenConfig) {
-    data class TokenConfig(val key: RSAKey, val durationMillis: Long)
+    data class TokenConfig(
+        val key: RSAKey,
+        val durationMillis: Long,
+        val issuer: String,
+        val audience: String
+    )
 
     companion object {
         fun parse(env: ApplicationEnvironment): AuthProps {
@@ -24,10 +29,12 @@ data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val oid:
             keyPathProperty: String,
             environment: ApplicationEnvironment
         ): TokenConfig {
+            // TODO: fix paths
             return TokenConfig(
-                durationMillis = environment.config.property(durationProperty).getString()
-                    .toLong(),
-                key = loadRSAPrivateKey(environment.config.property(keyPathProperty).getString())
+                durationMillis = environment.config.property(durationProperty).getString().toLong(),
+                key = loadRSAPrivateKey(environment.config.property(keyPathProperty).getString()),
+                issuer = environment.config.property(durationProperty).getString(),
+                audience = environment.config.property(durationProperty).getString(),
 
             )
         }

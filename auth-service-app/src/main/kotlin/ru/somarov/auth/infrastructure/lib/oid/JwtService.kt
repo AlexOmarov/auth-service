@@ -4,20 +4,20 @@ import com.auth0.jwt.interfaces.DecodedJWT
 
 class JwtService(props: AuthProps) {
     private val handlers = mapOf(
-        KeyType.ACCESS to JwtHandler(props.access),
-        KeyType.REFRESH to JwtHandler(props.refresh),
-        KeyType.USERID to JwtHandler(props.oid)
+        TokenType.ACCESS to JwtHandler(props.access),
+        TokenType.REFRESH to JwtHandler(props.refresh),
+        TokenType.USERID to JwtHandler(props.oid)
     )
 
-    fun generate(userId: String, type: KeyType): String {
+    fun generate(userId: String, type: TokenType): String {
         return handlers[type]!!.generate(userId)
     }
 
-    fun verify(token: String, type: KeyType): DecodedJWT? {
+    fun verify(token: String, type: TokenType): DecodedJWT? {
         return handlers[type]!!.verify(token)
     }
 
-    enum class KeyType {
+    enum class TokenType {
         ACCESS, REFRESH, USERID
     }
 }

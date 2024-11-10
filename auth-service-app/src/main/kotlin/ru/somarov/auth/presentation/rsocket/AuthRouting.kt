@@ -13,20 +13,20 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
-import ru.somarov.auth.application.service.Service
+import ru.somarov.auth.application.service.AuthenticationService
 import ru.somarov.auth.presentation.request.RegistrationRequest
 import ru.somarov.auth.presentation.request.ValidationRequest
 import ru.somarov.auth.presentation.response.RegistrationResponse
 import ru.somarov.auth.presentation.response.ValidationResponse
 
 @OptIn(ExperimentalSerializationApi::class)
-internal fun Routing.authSocket(service: Service) {
+internal fun Routing.authSocket(authenticationService: AuthenticationService) {
 
     rSocket("validate") {
         RSocketRequestHandler {
             requestResponse {
                 val req = Cbor.Default.decodeFromByteArray<ValidationRequest>(it.data.readByteArray())
-                val result = service.validate(req)
+                val result = authenticationService.validate(req)
                 buildPayload {
                     data { writePacket(ByteReadPacket(Cbor.Default.encodeToByteArray(ValidationResponse(result)))) }
                 }
@@ -38,7 +38,7 @@ internal fun Routing.authSocket(service: Service) {
         RSocketRequestHandler {
             requestResponse {
                 val req = Cbor.Default.decodeFromByteArray<RegistrationRequest>(it.data.readByteArray())
-                val result = service.register(req)
+                val result = authenticationService.register(req)
                 buildPayload {
                     data { writePacket(ByteReadPacket(Cbor.Default.encodeToByteArray(RegistrationResponse(result)))) }
                 }
@@ -46,7 +46,7 @@ internal fun Routing.authSocket(service: Service) {
 
             requestStream {
                 val req = Cbor.Default.decodeFromByteArray<RegistrationRequest>(it.data.readByteArray())
-                val result = service.register(req)
+                val result = authenticationService.register(req)
                 val response = Cbor.Default.encodeToByteArray(RegistrationResponse(result))
                 flow {
                     repeat(REPEAT) {
