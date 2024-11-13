@@ -5,6 +5,7 @@ import io.ktor.server.config.MapApplicationConfig
 import io.ktor.server.config.mergeWith
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.kafka.KafkaContainer
 
@@ -21,6 +22,15 @@ object BaseIntegrationTest {
             start()
         }
 
+    private const val KEYDB_PORT = 6379
+
+    private val keydb = GenericContainer("eqalpha/keydb:latest")
+        .withExposedPorts(KEYDB_PORT)
+        .apply {
+            withReuse(true)
+            start()
+        }
+
     private val env = MapApplicationConfig(
         "ktor.db.port" to postgresql.firstMappedPort.toString(),
         "ktor.db.host" to postgresql.host,
@@ -28,6 +38,7 @@ object BaseIntegrationTest {
         "ktor.db.password" to postgresql.password,
         "ktor.db.name" to postgresql.databaseName,
         "ktor.kafka.brokers" to kafka.bootstrapServers,
+        "ktor.cache.url" to "redis://${keydb.host}:${keydb.firstMappedPort}",
     )
 
     fun execute(func: suspend (ApplicationTestBuilder) -> Unit) {
