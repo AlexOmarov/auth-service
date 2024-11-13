@@ -88,7 +88,6 @@ internal fun Application.config() {
     install(Authentication)
     install(WebSockets)
 
-
     // TODO: uncomment when new version of rsocket kotlin will be released
     // install(RSocketSupport) { server { setupRSocketServer(this, registry) } }
 

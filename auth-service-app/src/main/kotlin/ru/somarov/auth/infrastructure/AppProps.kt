@@ -4,7 +4,6 @@ import io.ktor.server.application.*
 import ru.somarov.auth.infrastructure.lib.db.DbProps
 import ru.somarov.auth.infrastructure.lib.oid.AuthProps
 import ru.somarov.auth.infrastructure.lib.kafka.KafkaProps
-import ru.somarov.auth.infrastructure.lib.keydb.KeyDbClient
 import ru.somarov.auth.infrastructure.lib.keydb.KeyDbProps
 import ru.somarov.auth.infrastructure.lib.observability.props.OtelProps
 

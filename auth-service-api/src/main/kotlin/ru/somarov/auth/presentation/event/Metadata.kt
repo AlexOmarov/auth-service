@@ -10,5 +10,5 @@ data class Metadata(
     val key: String,
     val attempt: Int
 ) {
-    constructor(key: String): this(now(), key, 0)
+    constructor(key: String) : this(now(), key, 0)
 }

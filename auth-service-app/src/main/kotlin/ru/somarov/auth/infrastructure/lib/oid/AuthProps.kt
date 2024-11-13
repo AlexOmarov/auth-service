@@ -38,14 +38,15 @@ data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val user
 
         @OptIn(ExperimentalEncodingApi::class)
         private fun loadRSAPrivateKey(path: String, environment: ApplicationEnvironment): RSAKey {
-            val bytes = environment::class.java.classLoader.getResourceAsStream(path) ?: throw OidValidationException("")
+            val bytes = environment::class.java.classLoader.getResourceAsStream(path)
+                ?: throw OidValidationException("")
             val content = bytes.bufferedReader().use { it.readText() }
 
             // Remove PEM headers and footers
             val keyPEM = content
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
-                .replace("\\s".toRegex(), "")  // Remove all whitespace
+                .replace("\\s".toRegex(), "") // Remove all whitespace
 
             // Decode the Base64 content
             val decodedKey = Base64.decode(keyPEM)

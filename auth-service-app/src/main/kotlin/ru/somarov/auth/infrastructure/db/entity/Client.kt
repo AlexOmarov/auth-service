@@ -7,7 +7,7 @@ data class Client(
     val redirectUris: List<String>
 ) {
     companion object {
-        @Suppress("kotlin:S6518") // Cannot use [] due to r2dbc api
+        @Suppress("kotlin:S6518", "UNCHECKED_CAST") // Cannot use [] due to r2dbc api
         fun map(row: Row): Client {
             return Client(
                 row.get("id", String::class.java)!!,

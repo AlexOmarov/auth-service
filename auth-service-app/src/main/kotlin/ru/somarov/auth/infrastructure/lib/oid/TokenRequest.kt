@@ -15,7 +15,7 @@ data class TokenRequest(
             val grantType = getValueOrThrow(params, "grant_type")
             val codeVerifier = getValueOrThrow(params, "code_verifier")
 
-            if(code != "authorization_code") {
+            if (code != "authorization_code") {
                 throw OidValidationException("Got error while parsing auth request")
             }
 

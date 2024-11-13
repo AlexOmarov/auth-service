@@ -9,7 +9,7 @@ import ru.somarov.auth.infrastructure.lib.oid.AuthProps.TokenConfig
 import java.util.Date
 
 class JwtHandler(private val config: TokenConfig) {
-    private val logger = logger {  }
+    private val logger = logger { }
 
     private val algorithm = Algorithm.RSA256(config.key)
 

@@ -38,11 +38,20 @@ class AuthenticationService(
     // TODO: login function
 
     suspend fun logout(request: LogoutRequest) {
-        keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:${request.accessToken}"), Cbor.encodeToByteArray<String>(request.accessToken))
-        keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:${request.refreshToken}"), Cbor.encodeToByteArray<String>(request.refreshToken))
-        request.idToken?.let { keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:$it"), Cbor.encodeToByteArray<String>(it)) }
+        keyDbClient.store(
+            Cbor.encodeToByteArray<String>("revoked:${request.accessToken}"),
+            Cbor.encodeToByteArray<String>(request.accessToken)
+        )
+        keyDbClient.store(
+            Cbor.encodeToByteArray<String>("revoked:${request.refreshToken}"),
+            Cbor.encodeToByteArray<String>(request.refreshToken)
+        )
+        request.idToken?.let {
+            keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:$it"), Cbor.encodeToByteArray<String>(it))
+        }
     }
 
+    @Suppress("ThrowsCount")
     suspend fun token(params: Parameters): TokenResponse {
         var request = TokenRequest.create(params)
 
