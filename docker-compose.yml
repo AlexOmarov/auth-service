@@ -10,13 +10,13 @@ services:
       start_period: 20s
     depends_on:
       - db
+      - keydb
       - kafka
     environment:
       APP_NAME: "auth-service"
       KAFKA_BROKERS: "kafka:9092"
+      KEYDB_HOST: "redis://keydb:6379"
       DB_HOST: "db"
-      OTEL_HOST: "collector"
-      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://collector:4318/v1/metrics"
     ports:
       - "8080:8080"
 
@@ -30,11 +30,31 @@ services:
       POSTGRES_USER: auth_service
       POSTGRES_DB: auth_service
 
+  keydb:
+    image: eqalpha/keydb
+    ports:
+      - "6379:6379"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.2
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVER_ID: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: 0.0.0.0
+      KAFKA_OPTS: "-Dzookeeper.4lw.commands.whitelist=*"
+    volumes:
+      - zk-data:/var/lib/zookeeper/data
+      - zk-txn-logs:/var/lib/zookeeper/log
+      - zk-secrets:/etc/zookeeper/secrets
+
   kafka:
-    image: confluentinc/cp-enterprise-kafka
+    image: confluentinc/cp-kafka
     ports:
       - "29092:29092"
     environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENERS: LOCAL://kafka:29092,DOCKER://kafka:9092
       KAFKA_ADVERTISED_LISTENERS: LOCAL://localhost:29092, DOCKER://kafka:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LOCAL:PLAINTEXT,DOCKER:PLAINTEXT
@@ -42,16 +62,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-
-  collector:
-    image: otel/opentelemetry-collector-contrib:0.102.1
-    volumes:
-      - ./config/config.yaml:/etc/config.yaml
-    command: [ "--config=/etc/config.yaml" ]
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-      - "4319:4319"
 
 
 volumes:

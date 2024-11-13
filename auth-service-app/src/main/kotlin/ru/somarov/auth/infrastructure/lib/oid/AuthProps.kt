@@ -1,11 +1,11 @@
 package ru.somarov.auth.infrastructure.lib.oid
 
 import io.ktor.server.application.*
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.security.KeyFactory
 import java.security.interfaces.RSAKey
 import java.security.spec.PKCS8EncodedKeySpec
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val userid: TokenConfig) {
     data class TokenConfig(
@@ -18,30 +18,39 @@ data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val user
     companion object {
         fun parse(env: ApplicationEnvironment): AuthProps {
             return AuthProps(
-                access = loadTokenConfig("ktor.auth.access.duration-millis", "ktor.auth.access.key-path", env),
-                refresh = loadTokenConfig("ktor.auth.refresh.duration-millis", "ktor.auth.refresh.key-path", env),
-                userid = loadTokenConfig("ktor.auth.userid.duration-millis", "ktor.auth.userid.key-path", env)
+                access = loadTokenConfig("access", env),
+                refresh = loadTokenConfig("refresh", env),
+                userid = loadTokenConfig("userid", env)
             )
         }
 
         private fun loadTokenConfig(
-            durationProperty: String,
-            keyPathProperty: String,
-            environment: ApplicationEnvironment
+            prefix: String,
+            env: ApplicationEnvironment
         ): TokenConfig {
-            // TODO: fix paths
             return TokenConfig(
-                durationMillis = environment.config.property(durationProperty).getString().toLong(),
-                key = loadRSAPrivateKey(environment.config.property(keyPathProperty).getString()),
-                issuer = environment.config.property(durationProperty).getString(),
-                audience = environment.config.property(durationProperty).getString(),
+                durationMillis = env.config.property("ktor.auth.$prefix.duration-millis").getString().toLong(),
+                key = loadRSAPrivateKey(env.config.property("ktor.auth.$prefix.key-path").getString(), env),
+                issuer = env.config.property("ktor.auth.$prefix.issuer").getString(),
+                audience = env.config.property("ktor.auth.$prefix.audience").getString(),
             )
         }
 
-        private fun loadRSAPrivateKey(path: String): RSAKey {
-            val privateKeyPath = Paths.get(path)
-            val privateKeyBytes = Files.readAllBytes(privateKeyPath)
-            val keySpec = PKCS8EncodedKeySpec(privateKeyBytes)
+        @OptIn(ExperimentalEncodingApi::class)
+        private fun loadRSAPrivateKey(path: String, environment: ApplicationEnvironment): RSAKey {
+            val bytes = environment::class.java.classLoader.getResourceAsStream(path) ?: throw OidValidationException("")
+            val content = bytes.bufferedReader().use { it.readText() }
+
+            // Remove PEM headers and footers
+            val keyPEM = content
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replace("\\s".toRegex(), "")  // Remove all whitespace
+
+            // Decode the Base64 content
+            val decodedKey = Base64.decode(keyPEM)
+
+            val keySpec = PKCS8EncodedKeySpec(decodedKey)
             val keyFactory = KeyFactory.getInstance("RSA")
             return keyFactory.generatePrivate(keySpec) as RSAKey
         }

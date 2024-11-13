@@ -74,7 +74,7 @@ tasks.withType<Test> {
 }
 
 detekt {
-    config.setFrom(files("$rootDir/detekt-config.yml"))
+    config.setFrom(files("$rootDir/detekt.yml"))
 }
 
 application {

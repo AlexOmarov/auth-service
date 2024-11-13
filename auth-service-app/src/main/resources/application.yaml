@@ -22,10 +22,10 @@ ktor:
   db:
     host: "$DB_HOST:localhost"
     port: "$DB_PORT:5432"
-    name: "$DB_NAME:test"
+    name: "$DB_NAME:auth_service"
     schema: "$DB_SCHEMA:auth_service"
-    user: "$DB_USER:test"
-    password: "$DB_PASSWORD:test"
+    user: "$DB_USER:auth_service"
+    password: "$DB_PASSWORD:auth_service"
     connection-timeout: "$DB_CONNECTION_TIMEOUT:PT5S"
     statement-timeout: "$DB_STATEMENT_TIMEOUT:PT5S"
     pool:
@@ -34,8 +34,8 @@ ktor:
       max-idle-time: "$DB_POOL_MAX_IDLE_TIME:PT1M"
       max-life-time: "$DB_POOL_MAX_LIFE_TIME:PT1M"
       validation-query: "$DB_POOL_VALIDATION_QUERY:SELECT 1"
-  keydb:
-    host: "KEYDB_HOST:redis://localhost:6379"
+  cache:
+    url: "$KEYDB_HOST:redis://localhost:6379"
   kafka:
     brokers: "$KAFKA_BROKERS:localhost:9092"
     producers:
@@ -55,3 +55,19 @@ ktor:
         enabled: "$KAFKA_AU_ENABLED:false"
         topic: "auth_service_auth_broadcast"
         max-in-flight: "1"
+  auth:
+    access:
+      duration-millis: 50000
+      key-path: key8.pem
+      issuer: auth
+      audience: auth
+    refresh:
+      duration-millis: 50000
+      key-path: key8.pem
+      issuer: auth
+      audience: auth
+    userid:
+      duration-millis: 50000
+      key-path: key8.pem
+      issuer: auth
+      audience: auth
