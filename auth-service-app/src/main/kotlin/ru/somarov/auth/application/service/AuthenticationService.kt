@@ -32,7 +32,7 @@ class AuthenticationService(
             Cbor.Default.encodeToByteArray(request)
         )
 
-        return authCode // Here i should redirect user to login page either in mobile or in web
+        return authCode // TODO: Here i should redirect user to login page either in mobile or in web
     }
 
     // TODO: login function
@@ -42,7 +42,6 @@ class AuthenticationService(
         keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:${request.refreshToken}"), Cbor.encodeToByteArray<String>(request.refreshToken))
         request.idToken?.let { keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:$it"), Cbor.encodeToByteArray<String>(it)) }
     }
-
 
     suspend fun token(params: Parameters): TokenResponse {
         var request = TokenRequest.create(params)
