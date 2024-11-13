@@ -7,7 +7,7 @@ import java.security.KeyFactory
 import java.security.interfaces.RSAKey
 import java.security.spec.PKCS8EncodedKeySpec
 
-data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val oid: TokenConfig) {
+data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val userid: TokenConfig) {
     data class TokenConfig(
         val key: RSAKey,
         val durationMillis: Long,
@@ -20,7 +20,7 @@ data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val oid:
             return AuthProps(
                 access = loadTokenConfig("ktor.auth.access.duration-millis", "ktor.auth.access.key-path", env),
                 refresh = loadTokenConfig("ktor.auth.refresh.duration-millis", "ktor.auth.refresh.key-path", env),
-                oid = loadTokenConfig("ktor.auth.oid.duration-millis", "ktor.auth.oid.key-path", env)
+                userid = loadTokenConfig("ktor.auth.userid.duration-millis", "ktor.auth.userid.key-path", env)
             )
         }
 
@@ -35,7 +35,6 @@ data class AuthProps(val access: TokenConfig, val refresh: TokenConfig, val oid:
                 key = loadRSAPrivateKey(environment.config.property(keyPathProperty).getString()),
                 issuer = environment.config.property(durationProperty).getString(),
                 audience = environment.config.property(durationProperty).getString(),
-
             )
         }
 

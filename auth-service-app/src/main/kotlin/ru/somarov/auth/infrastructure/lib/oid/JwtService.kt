@@ -6,7 +6,7 @@ class JwtService(props: AuthProps) {
     private val handlers = mapOf(
         TokenType.ACCESS to JwtHandler(props.access),
         TokenType.REFRESH to JwtHandler(props.refresh),
-        TokenType.USERID to JwtHandler(props.oid)
+        TokenType.USERID to JwtHandler(props.userid)
     )
 
     fun generate(userId: String, type: TokenType): String {

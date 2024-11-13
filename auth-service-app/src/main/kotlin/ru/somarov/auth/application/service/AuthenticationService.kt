@@ -9,7 +9,9 @@ import ru.somarov.auth.infrastructure.lib.keydb.KeyDbClient
 import ru.somarov.auth.infrastructure.lib.oid.AuthenticationContext
 import ru.somarov.auth.infrastructure.lib.oid.AuthenticationRequest
 import ru.somarov.auth.infrastructure.lib.oid.JwtService
+import ru.somarov.auth.infrastructure.lib.oid.TokenRequest
 import ru.somarov.auth.infrastructure.lib.util.generateRandomString
+import ru.somarov.auth.presentation.request.LogoutRequest
 import ru.somarov.auth.presentation.response.TokenResponse
 import java.security.MessageDigest
 import kotlin.io.encoding.Base64
@@ -34,27 +36,26 @@ class AuthenticationService(
     }
 
     // TODO: login function
-    // TODO: logout function
+
+    suspend fun logout(request: LogoutRequest) {
+        keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:${request.accessToken}"), Cbor.encodeToByteArray<String>(request.accessToken))
+        keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:${request.refreshToken}"), Cbor.encodeToByteArray<String>(request.refreshToken))
+        request.idToken?.let { keyDbClient.store(Cbor.encodeToByteArray<String>("revoked:$it"), Cbor.encodeToByteArray<String>(it)) }
+    }
+
 
     suspend fun token(params: Parameters): TokenResponse {
-        val clientId = params["client_id"] ?: throw IllegalArgumentException("Missing client_id")
-        val code = params["code"] ?: throw IllegalArgumentException("Missing authorization code")
-        val grantType = params["grant_type"] ?: throw IllegalArgumentException("Missing grant_type")
-        val codeVerifier = params["code_verifier"] ?: throw IllegalArgumentException("Missing code_verifier")
+        var request = TokenRequest.create(params)
 
-        if (grantType != "authorization_code") {
-            throw IllegalArgumentException("Unsupported grant_type: $grantType")
-        }
-
-        val authenticationBytes = keyDbClient.retrieve(Cbor.Default.encodeToByteArray("authentication:$code"))
+        val authenticationBytes = keyDbClient.retrieve(Cbor.Default.encodeToByteArray("authentication:${request.code}"))
             ?: throw IllegalArgumentException("Invalid or expired authorization code")
 
         val authentication = Cbor.Default.decodeFromByteArray<AuthenticationContext>(authenticationBytes)
-        if (authentication.request.clientId != clientId) {
+        if (authentication.request.clientId != request.clientId) {
             throw IllegalArgumentException("Invalid client_id")
         }
 
-        if (!validate(authentication, codeVerifier)) {
+        if (!validate(authentication, request.codeVerifier)) {
             throw IllegalArgumentException("Invalid PKCE code_verifier")
         }
 
