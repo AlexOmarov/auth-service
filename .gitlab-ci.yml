@@ -32,3 +32,8 @@ notify:
       -d "chat_id=${TELEGRAM_TO}" 
       -d "text=${GITLAB_USER_NAME} -> ${CI_PROJECT_PATH}\n\n${CI_COMMIT_MESSAGE}\n\n*${CI_JOB_STATUS}*\n\nSee changes: ${CI_REPOSITORY_URL}/commit/${CI_COMMIT_SHA}" 
       -d "parse_mode=Markdown"
+
+# noinspection ComposeMissingKeys
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+
