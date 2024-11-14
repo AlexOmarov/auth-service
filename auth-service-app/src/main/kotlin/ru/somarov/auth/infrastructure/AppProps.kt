@@ -1,11 +1,11 @@
 package ru.somarov.auth.infrastructure
 
-import io.ktor.server.application.*
-import ru.somarov.auth.infrastructure.lib.db.DbProps
-import ru.somarov.auth.infrastructure.lib.oid.AuthProps
-import ru.somarov.auth.infrastructure.lib.kafka.KafkaProps
-import ru.somarov.auth.infrastructure.lib.keydb.KeyDbProps
-import ru.somarov.auth.infrastructure.lib.observability.props.OtelProps
+import io.ktor.server.application.ApplicationEnvironment
+import ru.somarov.auth.lib.db.DbProps
+import ru.somarov.auth.lib.oid.AuthProps
+import ru.somarov.auth.lib.kafka.KafkaProps
+import ru.somarov.auth.lib.keydb.KeyDbProps
+import ru.somarov.auth.lib.observability.props.OtelProps
 
 data class AppProps(
     val db: DbProps,

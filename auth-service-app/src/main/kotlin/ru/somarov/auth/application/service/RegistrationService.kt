@@ -4,8 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Clock.System.now
 import ru.somarov.auth.infrastructure.db.entity.User
 import ru.somarov.auth.infrastructure.db.repo.UserRepo
-import ru.somarov.auth.infrastructure.lib.kafka.Producer
-import ru.somarov.auth.infrastructure.lib.util.generateRandomString
+import ru.somarov.auth.lib.kafka.Producer
+import ru.somarov.auth.lib.util.generateRandomString
 import ru.somarov.auth.presentation.event.Metadata
 import ru.somarov.auth.presentation.event.broadcast.RegistrationBroadcast
 import ru.somarov.auth.presentation.request.RegistrationRequest

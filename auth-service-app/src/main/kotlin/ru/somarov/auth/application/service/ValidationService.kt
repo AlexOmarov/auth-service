@@ -4,8 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.encodeToByteArray
-import ru.somarov.auth.infrastructure.lib.keydb.KeyDbClient
-import ru.somarov.auth.infrastructure.lib.oid.JwtService
+import ru.somarov.auth.lib.keydb.KeyDbClient
+import ru.somarov.auth.lib.oid.JwtService
 import ru.somarov.auth.presentation.request.ValidationRequest
 
 class ValidationService(private val jwtService: JwtService, private val cache: KeyDbClient) {
