@@ -36,4 +36,6 @@ notify:
 # noinspection ComposeMissingKeys
 include:
   - template: Jobs/SAST.gitlab-ci.yml
-
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Security/SAST-IaC.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
