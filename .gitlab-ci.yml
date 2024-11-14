@@ -1,6 +1,6 @@
 stages:
   - build
-  - quality
+  - test
   - notify
 
 image: "gradle:8.11.0-jdk21-alpine"
@@ -10,11 +10,11 @@ build:
   script: ./gradlew build
 
 test:
-  stage: quality
+  stage: test
   script: ./gradlew test
 
 scan:
-  stage: quality
+  stage: test
   script:
     - > 
       ./gradlew sonar 
