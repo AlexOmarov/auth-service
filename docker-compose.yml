@@ -63,7 +63,6 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
 
-
 volumes:
   pg_data: { }
   zk-data: { }

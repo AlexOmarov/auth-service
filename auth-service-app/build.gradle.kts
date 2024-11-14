@@ -39,7 +39,7 @@ tasks {
 
 tasks.register("generateBuildInfo") {
     group = "build"
-    description = "Generates build-info.properties file with build metadata."
+    description = "Generates build-info.properties file with build metadata"
 
     doLast {
         val file = file("${layout.buildDirectory.asFile.get().path}/resources/main/META-INF/build-info.properties")
@@ -54,22 +54,13 @@ tasks.register("generateBuildInfo") {
     }
 }
 
-tasks.named("jar") {
-    dependsOn("generateBuildInfo")
-}
+tasks {
+    jar {
+        dependsOn("generateBuildInfo")
+    }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-    testLogging {
-        events = setOf(
-            org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED,
-            org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED,
-            org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED,
-        )
-        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-        showExceptions = true
-        showCauses = true
-        showStackTraces = true
+    test {
+        useJUnitPlatform()
     }
 }
 
@@ -90,11 +81,6 @@ ktor {
 kover {
     useJacoco()
     reports {
-        verify {
-            rule {
-                minBound(0)
-            }
-        }
         total {
             filters {
                 excludes {
@@ -108,9 +94,6 @@ kover {
             }
 
             xml {
-                onCheck = true
-            }
-            html {
                 onCheck = true
             }
         }

@@ -58,16 +58,16 @@ ktor:
   auth:
     access:
       duration-millis: 50000
-      key-path: key8.pem
+      key-path: key.pem
       issuer: auth
       audience: auth
     refresh:
       duration-millis: 50000
-      key-path: key8.pem
+      key-path: key.pem
       issuer: auth
       audience: auth
     userid:
       duration-millis: 50000
-      key-path: key8.pem
+      key-path: key.pem
       issuer: auth
       audience: auth
