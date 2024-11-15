@@ -8,6 +8,15 @@ image: "gradle:8.11.0-jdk21-alpine"
 build:
   stage: build
   script: ./gradlew build
+  cache:
+    key:
+      files:
+        - gradle/wrapper/gradle-wrapper.properties
+    paths:
+      - .gradle/caches
+      - .gradle/notifications
+      - .gradle/wrapper
+    policy: pull-push
 
 test:
   stage: test
@@ -39,3 +48,4 @@ include:
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Security/SAST-IaC.gitlab-ci.yml
   - template: Security/Dependency-Scanning.gitlab-ci.yml
+
